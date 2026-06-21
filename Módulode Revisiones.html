@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cibrián System - Módulo de Revisiones</title>
+    <style>
+        :root {
+            --verde-petroleo: #006068;
+            --verde-oscuro: #004D54;
+            --bg-color: #F8F9FA;
+            --texto-color: #333333;
+            --rojo-remover: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--texto-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-top: 6px solid var(--verde-petroleo);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--verde-oscuro);
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        fieldset {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: var(--bg-color);
+        }
+
+        legend {
+            font-weight: bold;
+            color: var(--verde-oscuro);
+            padding: 0 10px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .selector-cliente-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .add-cliente-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background-color: #fff;
+        }
+
+        .btn-accion {
+            padding: 8px 12px;
+            background-color: var(--verde-petroleo);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .btn-accion:hover { background-color: var(--verde-oscuro); }
+
+        .btn-remover {
+            background-color: #7f8c8d;
+            font-size: 11px;
+            padding: 6px 10px;
+            margin-left: 8px;
+        }
+        .btn-remover:hover { background-color: var(--rojo-remover); }
+
+        .btn-partida {
+            display: block;
+            width: 100%;
+            background-color: #fff;
+            color: var(--verde-petroleo);
+            border: 2px solid var(--verde-petroleo);
+            padding: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .btn-partida:hover {
+            background-color: var(--verde-petroleo);
+            color: white;
+        }
+
+        .btn-guardar {
+            display: block;
+            width: 100%;
+            background-color: var(--verde-petroleo);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 25px;
+        }
+        .btn-guardar:hover { background-color: var(--verde-oscuro); }
+
+        /* --- Tabla de Partidas Temporales --- */
+        .tabla-partidas {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .tabla-partidas th, .tabla-partidas td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .tabla-partidas th {
+            background-color: var(--verde-petroleo);
+            color: white;
+        }
+        .tabla-partidas tr:nth-child(even) { background-color: #f2f2f2; }
+
+        /* --- Consola de Texto para Copiar / Simular Archivo Físico --- */
+        .output-container {
+            margin-top: 25px;
+            display: none;
+        }
+
+        .output-container.active {
+            display: block;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #2ecc71;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>REGISTRO DE REVISIÓN DIARIA</h2>
+        
+        <fieldset>
+            <legend> Control de Cliente </legend>
+            
+            <div class="form-group">
+                <label for="combo-cliente">Seleccionar Cliente:</label>
+                <div class="selector-cliente-container">
+                    <select id="combo-cliente"></select>
+                    <button class="btn-accion btn-remover" onclick="eliminarClienteActual()" title="Eliminar cliente de la lista">Remover</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="background: #eef5f6; padding: 10px; border-radius: 4px;">
+                <label for="entry-nuevo-cliente" style="font-weight: bold; color: var(--verde-oscuro);">➕ Nuevo Cliente Rápido:</label>
+                <div class="add-cliente-container">
+                    <input type="text" id="entry-nuevo-cliente" placeholder="Nombre de la empresa...">
+                    <button class="btn-accion" onclick="agregarClienteRapido()">Agregar</button>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend> Datos Generales de la Operación </legend>
+            <div class="form-group">
+                <label for="entry-registro">Registro / Pedimento:</label>
+                <input type="text" id="entry-registro" placeholder="Ej. REG-12345">
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend> Detalles de la Mercancía (Partida) </legend>
+            <div class="form-group">
+                <label for="entry-bultos">Bultos:</label>
+                <input type="text" id="entry-bultos" placeholder="Ej. 12 PALLETS">
+            </div>
+            <div class="form-group">
+                <label for="entry-cantidad">Cantidad:</label>
+                <input type="text" id="entry-cantidad" placeholder="Ej. 1500">
+            </div>
+            <div class="form-group">
+                <label for="entry-descripcion">Descripción:</label>
+                <input type="text" id="entry-descripcion" placeholder="Ej. PERFILES DE ALUMINIO">
+            </div>
+            <div class="form-group">
+                <label for="entry-origen">Origen:</label>
+                <input type="text" id="entry-origen" placeholder="Ej. USA" maxlength="3">
+            </div>
+            <div class="form-group">
+                <label for="entry-peso">Peso:</label>
+                <input type="text" id="entry-peso" placeholder="Ej. 450 KGS">
+            </div>
+            
+            <button class="btn-partida" onclick="agregarPartida()">➕ AGREGAR PARTIDA AL REGISTRO</button>
+        </fieldset>
+
+        <fieldset id="section-partidas-agregadas" style="display: none;">
+            <legend> Partidas Agregadas (<span id="cuenta-partidas">0</span>) </legend>
+            <table class="tabla-partidas">
+                <thead>
+                    <tr>
+                        <th>Bultos</th>
+                        <th>Cant.</th>
+                        <th>Descripción</th>
+                        <th>Orig.</th>
+                        <th>Peso</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-partidas"></tbody>
+            </table>
+        </fieldset>
+
+        <button class="btn-guardar" onclick="guardarDatos()">GUARDAR REGISTRO DE REVISIÓN</button>
+
+        <div id="output-section" class="output-container">
+            <h3 style="color: var(--verde-oscuro); font-size: 14px;">Líneas Generadas con Alineación de Columnas Estricta (Descargadas):</h3>
+            <pre id="linea-resultado"></pre>
+            <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">* Nota: El archivo de texto se ha generado y descargado automáticamente en tu sistema.</p>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar base de datos local para clientes y arreglo de partidas temporales
+        let clientes = JSON.parse(localStorage.getItem('clientes_revisiones_db')) || ["CLIENTE GENERAL"];
+        let listaPartidas = [];
+
+        window.onload = function() {
+            actualizarCombo();
+            
+            // Permitir agregar partida al presionar Enter en los inputs de detalle
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        if (e.target.id === 'entry-nuevo-cliente') {
+                            agregarClienteRapido();
+                        } else if (e.target.id === 'entry-registro') {
+                            document.getElementById('entry-bultos').focus();
+                        } else {
+                            agregarPartida();
+                        }
+                    }
+                });
+            });
+        };
+
+        function actualizarCombo() {
+            const combo = document.getElementById('combo-cliente');
+            combo.innerHTML = '';
+            clientes.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c;
+                opt.innerText = c;
+                combo.appendChild(opt);
+            });
+        }
+
+        function agregarClienteRapido() {
+            let input = document.getElementById('entry-nuevo-cliente');
+            let nuevoC = input.value.trim().toUpperCase();
+
+            if (!nuevoC) {
+                alert("Escribe el nombre de un cliente para poder agregarlo.");
+                return;
+            }
+            if (clientes.includes(nuevoC)) {
+                alert("Este cliente ya se encuentra en la lista.");
+                return;
+            }
+
+            clientes.push(nuevoC);
+            clientes.sort();
+            localStorage.setItem('clientes_revisiones_db', JSON.stringify(clientes));
+            
+            actualizarCombo();
+            document.getElementById('combo-cliente').value = nuevoC;
+            input.value = '';
+        }
+
+        function eliminarClienteActual() {
+            let seleccionado = document.getElementById('combo-cliente').value;
+            if (!seleccionado || seleccionado === "CLIENTE GENERAL") {
+                alert("No se puede eliminar el valor por defecto.");
+                return;
+            }
+
+            if (confirm(`¿Deseas remover a "${seleccionado}" de tu lista de clientes permanente?`)) {
+                clientes = clientes.filter(c => c !== seleccionado);
+                localStorage.setItem('clientes_revisiones_db', JSON.stringify(clientes));
+                actualizarCombo();
+            }
+        }
+
+        // --- FUNCIÓN DE AGREGAR PARTIDA A LA LISTA TEMPORAL ---
+        function agregarPartida() {
+            let bultos      = document.getElementById('entry-bultos').value.trim();
+            let cantidad    = document.getElementById('entry-cantidad').value.trim();
+            let descripcion = document.getElementById('entry-descripcion').value.trim();
+            let origen      = document.getElementById('entry-origen').value.trim();
+            let peso        = document.getElementById('entry-peso').value.trim();
+
+            if (!descripcion) {
+                alert("La descripción de la mercancía es obligatoria para añadir la partida.");
+                document.getElementById('entry-descripcion').focus();
+                return;
+            }
+
+            // Añadir al arreglo global de partidas de esta sesión
+            listaPartidas.push({ bultos, cantidad, descripcion, origen, peso });
+            renderizarTablaPartidas();
+
+            // Limpieza de campos de mercancía y enfoque para la siguiente partida
+            document.getElementById('entry-bultos').value = '';
+            document.getElementById('entry-cantidad').value = '';
+            document.getElementById('entry-descripcion').value = '';
+            document.getElementById('entry-origen').value = '';
+            document.getElementById('entry-peso').value = '';
+            
+            document.getElementById('entry-bultos').focus();
+        }
+
+        function removerPartidaLista(index) {
+            listaPartidas.splice(index, 1);
+            renderizarTablaPartidas();
+        }
+
+        function renderizarTablaPartidas() {
+            const tbody = document.getElementById('tbody-partidas');
+            const section = document.getElementById('section-partidas-agregadas');
+            const cuenta = document.getElementById('cuenta-partidas');
+            
+            tbody.innerHTML = '';
+            cuenta.innerText = listaPartidas.length;
+
+            if (listaPartidas.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            listaPartidas.forEach((p, idx) => {
+                let row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${p.bultos || '-'}</td>
+                    <td>${p.cantidad || '-'}</td>
+                    <td>${p.descripcion}</td>
+                    <td>${p.origen || '-'}</td>
+                    <td>${p.peso || '-'}</td>
+                    <td><button class="btn-accion btn-remover" style="margin:0; padding:3px 6px;" onclick="removerPartidaLista(${idx})">X</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // --- FUNCIÓN DE FORMATEO EXCLUSIVA (EQUIVALENTE A LOS < EN PYTHON) ---
+        function padRight(str, length) {
+            str = str.toString();
+            if (str.length > length) {
+                return str.substring(0, length);
+            }
+            return str + ' '.repeat(length - str.length);
+        }
+
+        // --- FUNCIÓN DE DESCARGA DIRECTA DE ARCHIVO TXT ---
+        function descargarArchivoTexto(contenido, nombreArchivo) {
+            const blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
+            const enlace = document.createElement("a");
+            
+            enlace.href = URL.createObjectURL(blob);
+            enlace.download = nombreArchivo;
+            
+            document.body.appendChild(enlace);
+            enlace.click();
+            
+            document.body.removeChild(enlace);
+            URL.revokeObjectURL(enlace.href);
+        }
+
+        function guardarDatos() {
+            let cliente = document.getElementById('combo-cliente').value;
+            let registro = document.getElementById('entry-registro').value.trim();
+
+            if (!cliente) {
+                alert("Por favor selecciona un cliente.");
+                return;
+            }
+            if (!registro) {
+                alert("Por favor introduce el número de Registro/Pedimento general.");
+                document.getElementById('entry-registro').focus();
+                return;
+            }
+
+            // Si hay texto en los campos de captura que no se ha agregado con el botón, lo agregamos automáticamente
+            let bultosTemp = document.getElementById('entry-bultos').value.trim();
+            let descTemp = document.getElementById('entry-descripcion').value.trim();
+            if (descTemp || bultosTemp) {
+                agregarPartida();
+            }
+
+            if (listaPartidas.length === 0) {
+                alert("No hay ninguna partida agregada para procesar.");
+                return;
+            }
+
+            // Formatear Fecha Actual (dd/mm/yy)
+            const ahora = new Date();
+            let d = String(ahora.getDate()).padStart(2, '0');
+            let m = String(ahora.getMonth() + 1).padStart(2, '0');
+            let y = String(ahora.getFullYear()).slice(-2);
+            let fechaFormateada = `${d}/${m}/${y}`;
+
+            let contenidoCompletoTxt = "";
+
+            // Procesar cada partida guardada y estructurarla en líneas independientes
+            listaPartidas.forEach(partida => {
+                let f_fecha = padRight(fechaFormateada, 11);
+                let f_reg   = padRight(registro, 12);
+                let f_bul   = padRight(partida.bultos, 11);
+                let f_can   = padRight(partida.cantidad, 8);
+                let f_des   = padRight(partida.descripcion, 50);
+                let f_ori   = padRight(partida.origen, 3);
+                let f_pes   = padRight(partida.peso, 6);
+
+                // Construcción exacta de la línea de texto con tuberías
+                contenidoCompletoTxt += `${f_fecha}| ${f_reg} | ${f_bul} | ${f_can} | ${f_des} | ${f_ori} | ${f_pes}\n`;
+            });
+
+            // Mostrar todo el bloque estructurado en la consola visual
+            document.getElementById('linea-resultado').innerText = contenidoCompletoTxt;
+            document.getElementById('output-section').classList.add('active');
+
+            // Nombre dinámico del archivo unificado
+            let fechaSello = ahora.getFullYear() + String(ahora.getMonth() + 1).padStart(2, '0') + String(ahora.getDate()).padStart(2, '0');
+            let horaSello = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
+            let nombreArchivo = `Revision_${cliente.replace(/\s+/g, '_')}_${fechaSello}_${horaSello}.txt`;
+            
+            descargarArchivoTexto(contenidoCompletoTxt, nombreArchivo);
+
+            alert(`Registro procesado: Se exportaron ${listaPartidas.length} partidas para ${cliente}.`);
+
+            // Limpieza completa del formulario y la tabla temporal para la siguiente revisión
+            listaPartidas = [];
+            renderizarTablaPartidas();
+            
+            document.getElementById('entry-registro').value = '';
+            document.getElementById('entry-registro').focus();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moreno's - Módulo de Invoices</title>
+    <style>
+        :root {
+            --verde-petroleo: #006068;
+            --verde-oscuro: #004D54;
+            --bg-color: #F8F9FA;
+            --texto-color: #333333;
+            --rojo-remover: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--texto-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-top: 6px solid var(--verde-petroleo);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--verde-oscuro);
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        fieldset {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: var(--bg-color);
+        }
+
+        legend {
+            font-weight: bold;
+            color: var(--verde-oscuro);
+            padding: 0 10px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        /* Ajuste específico para la sección de agregar cliente rápido */
+        .cliente-add-group {
+            display: grid;
+            grid-template-columns: 1fr 120px;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        label {
+            font-size: 14px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background-color: #fff;
+        }
+
+        .btn-accion {
+            padding: 8px;
+            background-color: var(--verde-petroleo);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .btn-accion:hover { background-color: var(--verde-oscuro); }
+        
+        .btn-remover {
+            background-color: #7f8c8d;
+            font-size: 11px;
+            padding: 4px 8px;
+            margin-left: 10px;
+        }
+        .btn-remover:hover { background-color: var(--rojo-remover); }
+
+        .fecha-info {
+            font-size: 13px;
+            font-style: italic;
+            color: #555555;
+            margin-top: 15px;
+            border-top: 1px dashed #ccc;
+            padding-top: 10px;
+        }
+
+        .btn-generar {
+            display: block;
+            width: 100%;
+            background-color: var(--verde-petroleo);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 25px;
+        }
+
+        .btn-generar:hover {
+            background-color: var(--verde-oscuro);
+        }
+
+        /* --- ARQUITECTURA DE IMPRESIÓN EXCLUSIVA (MORENO'S INVOICE) --- */
+        #invoice-print-area {
+            display: none;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #invoice-print-area, #invoice-print-area * {
+                visibility: visible;
+            }
+            #invoice-print-area {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: #000;
+                padding: 10px;
+            }
+            .invoice-header {
+                border-bottom: 3px solid #006068;
+                padding-bottom: 5px;
+                margin-bottom: 20px;
+            }
+            .invoice-logo {
+                color: #006068;
+                font-size: 28px;
+                font-weight: bold;
+                font-family: Arial, sans-serif;
+            }
+            .invoice-meta-container {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 25px;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .meta-block-left {
+                text-align: left;
+            }
+            .meta-block-right {
+                text-align: right;
+            }
+            .invoice-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 15px;
+            }
+            .invoice-table th {
+                border-bottom: 2px solid #006068;
+                color: #006068;
+                padding: 10px 5px;
+                text-align: left;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            .invoice-table td {
+                padding: 10px 5px;
+                border-bottom: 1px solid #ddd;
+                font-size: 13px;
+            }
+            .text-right {
+                text-align: right;
+            }
+            .linea-sumatoria {
+                border-top: 1px solid #006068;
+                margin-top: 15px;
+                text-align: right;
+                padding-top: 8px;
+            }
+            .total-box {
+                font-size: 16px;
+                font-weight: bold;
+                color: #006068;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>MORENO'S INVOICE SYSTEM</h2>
+        
+        <fieldset>
+            <legend> Datos Generales de Facturación </legend>
+            
+            <!-- SELECCIÓN DE CLIENTE -->
+            <div class="form-group">
+                <label for="combo-cliente">Seleccionar Cliente:</label>
+                <div style="display: flex; align-items: center;">
+                    <select id="combo-cliente">
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                    <button class="btn-accion btn-remover" onclick="eliminarClienteActual()" title="Eliminar cliente seleccionado de la lista">Remover</button>
+                </div>
+            </div>
+
+            <!-- AGREGAR NUEVO CLIENTE RÁPIDO -->
+            <div class="form-group" style="margin-top: 15px; background: #eef5f6; padding: 10px; border-radius: 4px;">
+                <label for="nuevo-cliente-nombre" style="font-weight: bold; color: var(--verde-oscuro);">➕ Crecer Lista (Nuevo Cliente):</label>
+                <div class="cliente-add-group">
+                    <input type="text" id="nuevo-cliente-nombre" placeholder="Nombre de la empresa...">
+                    <button class="btn-accion" onclick="agregarClienteRapido()">Agregar</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="entry-pedimento">Número de Pedimento (7 dígitos):</label>
+                <input type="text" id="entry-pedimento" placeholder="Ej. 1234567" maxlength="7">
+            </div>
+            <div id="fecha-actual" class="fecha-info"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend> Desglose de Rubros (USD) </legend>
+            <div class="form-group">
+                <label for="fmoreno">Fmoreno Charges (USD):</label>
+                <input type="number" id="fmoreno" value="0.0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="shipper">Shipper Fees (USD):</label>
+                <input type="number" id="shipper" value="0.0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="others">Others (USD):</label>
+                <input type="number" id="others" value="0.0" step="0.01">
+            </div>
+        </fieldset>
+
+        <button class="btn-generar" onclick="ejecutarInvoice()">GENERAR INVOICE CORPORATIVO PDF</button>
+    </div>
+
+    <div id="invoice-print-area"></div>
+
+    <script>
+        // Setear la fecha del día en la UI
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha-actual').innerText = `Fecha de Emisión Automatizada:  ${hoy}`;
+
+        // --- SISTEMA DINÁMICO SIMPLIFICADO DE CLIENTES ---
+        const CLIENTES_BASE = ["VELCRO DE MEXICO", "MORENO'S LOGISTICS"];
+        let listaClientes = [];
+
+        window.onload = function() {
+            cargarClientes();
+        };
+
+        function cargarClientes() {
+            let locales = localStorage.getItem('morenos_clientes_simples');
+            if (locales) {
+                listaClientes = JSON.parse(locales);
+            } else {
+                listaClientes = [...CLIENTES_BASE];
+                localStorage.setItem('morenos_clientes_simples', JSON.stringify(listaClientes));
+            }
+            actualizarCombo();
+        }
+
+        function actualizarCombo() {
+            const combo = document.getElementById('combo-cliente');
+            combo.innerHTML = '';
+            listaClientes.forEach(cliente => {
+                let opt = document.createElement('option');
+                opt.value = cliente;
+                opt.innerText = cliente;
+                combo.appendChild(opt);
+            });
+        }
+
+        function agregarClienteRapido() {
+            let input = document.getElementById('nuevo-cliente-nombre');
+            let nombre = input.value.trim().toUpperCase();
+            
+            if (!nombre) {
+                alert("Escribe el nombre de un cliente para poder agregarlo.");
+                return;
+            }
+            if (listaClientes.includes(nombre)) {
+                alert("Este cliente ya se encuentra en la lista.");
+                return;
+            }
+
+            listaClientes.push(nombre);
+            listaClientes.sort(); // Lo organiza alfabéticamente
+            localStorage.setItem('morenos_clientes_simples', JSON.stringify(listaClientes));
+            
+            actualizarCombo();
+            combo.value = nombre; // Auto-selecciona el que acabas de meter
+            input.value = ''; // Limpia el input
+        }
+
+        function eliminarClienteActual() {
+            let seleccionado = document.getElementById('combo-cliente').value;
+            if (!seleccionado) return;
+
+            if (confirm(`¿Deseas remover a "${seleccionado}" de tu lista de clientes?`)) {
+                listaClientes = listaClientes.filter(c => c !== seleccionado);
+                localStorage.setItem('morenos_clientes_simples', JSON.stringify(listaClientes));
+                actualizarCombo();
+            }
+        }
+
+        // --- LÓGICA DE CÁLCULO FACTURA ---
+        function getFloat(id) {
+            let val = parseFloat(document.getElementById(id).value);
+            return isNaN(val) ? 0.0 : val;
+        }
+
+        function formatoMoneda(num) {
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function obtenerSiguienteFolio() {
+            let ultimoFolio = parseInt(localStorage.getItem('ultimo_no_invoice')) || 34;
+            let siguienteFolio = ultimoFolio + 1;
+            localStorage.setItem('ultimo_no_invoice', siguienteFolio);
+            return siguienteFolio;
+        }
+
+        function ejecutarInvoice() {
+            // 1. Extraer cliente del combo
+            let cliente = document.getElementById('combo-cliente').value;
+            if (!cliente) {
+                alert("Por favor selecciona o agrega un cliente primero.");
+                return;
+            }
+
+            // 2. Validar Pedimento estructural de 7 números continuos
+            let pedimento = document.getElementById('entry-pedimento').value.trim();
+            const regexPedimento = /^\d{7}$/;
+            if (!regexPedimento.test(pedimento)) {
+                alert("El número de pedimento debe constar de exactamente 7 números continuos.");
+                return;
+            }
+
+            // 3. Extraer montos capturados
+            let fmoreno = getFloat('fmoreno');
+            let shipper = getFloat('shipper');
+            let others = getFloat('others');
+            let totalCharged = fmoreno + shipper + others;
+
+            // 4. Asignación automática de Variables de Control
+            let folio = obtenerSiguienteFolio();
+
+            // 5. Construcción de la plantilla del Invoice para guardado físico / PDF
+            let invoiceHTML = `
+                <div class="invoice-header">
+                    <div class="invoice-logo">MORENO'S</div>
+                </div>
+                <div class="invoice-meta-container">
+                    <div class="meta-block-left">
+                        <strong>CLIENT:</strong> ${cliente}<br>
+                        <strong>DATE:</strong> ${hoy}
+                    </div>
+                    <div class="meta-block-right">
+                        <strong>NUM. PEDIMENTO:</strong> ${pedimento}<br>
+                        <strong>INVOICE FOLIO:</strong> ${folio}
+                    </div>
+                </div>
+                <table class="invoice-table">
+                    <tr>
+                        <th>DESCRIPTION</th>
+                        <th class="text-right">AMOUNT (USD)</th>
+                    </tr>
+                    <tr>
+                        <td>Fmoreno Charges (USD)</td>
+                        <td class="text-right">$ ${formatoMoneda(fmoreno)}</td>
+                    </tr>
+                    <tr>
+                        <td>Shipper Fees (USD)</td>
+                        <td class="text-right">$ ${formatoMoneda(shipper)}</td>
+                    </tr>
+                    <tr>
+                        <td>Others (USD)</td>
+                        <td class="text-right">$ ${formatoMoneda(others)}</td>
+                    </tr>
+                </table>
+                <div class="linea-sumatoria">
+                    <span class="total-box">TOTAL CHARGED (USD): &nbsp;&nbsp;&nbsp;&nbsp; $ ${formatoMoneda(totalCharged)}</span>
+                </div>
+            `;
+
+            // Insertar plantilla y mandar llamar la orden de renderizado e impresión
+            document.getElementById('invoice-print-area').innerHTML = invoiceHTML;
+            window.print();
+
+            // 6. Alerta de confirmación de guardado seguro
+            alert(`¡Comprobante Folio ${folio} creado exitosamente!\n\nRevisa tu carpeta de descargas o destino del PDF.`);
+
+            // 7. Vaciar campos dinámicos para la siguiente operación
+            document.getElementById('entry-pedimento').value = '';
+            document.getElementById('fmoreno').value = '0.0';
+            document.getElementById('shipper').value = '0.0';
+            document.getElementById('others').value = '0.0';
+        }
+    </script>
+</body>
+</html>

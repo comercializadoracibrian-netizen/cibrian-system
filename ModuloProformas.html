@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comercializadora Cibrián - Módulo de Proformas</title>
+    <style>
+        :root {
+            --verde-petroleo: #006068;
+            --verde-oscuro: #004D54;
+            --bg-color: #F8F9FA;
+            --texto-color: #333333;
+            --rojo-remover: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--texto-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-top: 6px solid var(--verde-petroleo);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--verde-oscuro);
+            margin-bottom: 25px;
+        }
+
+        fieldset {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: var(--bg-color);
+        }
+
+        legend {
+            font-weight: bold;
+            color: var(--verde-oscuro);
+            padding: 0 10px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .form-group.triple {
+            grid-template-columns: 1.2fr 1.5fr 1.3fr;
+        }
+
+        /* Estructura alineada para Selección + Remoción de clientes */
+        .selector-cliente-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* Estructura alineada para Agregar clientes rápido */
+        .add-cliente-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .btn-accion {
+            padding: 8px 12px;
+            background-color: var(--verde-petroleo);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .btn-accion:hover { background-color: var(--verde-oscuro); }
+
+        .btn-remover {
+            background-color: #7f8c8d;
+            font-size: 11px;
+            padding: 6px 10px;
+            margin-left: 8px;
+        }
+        .btn-remover:hover { background-color: var(--rojo-remover); }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+            color: var(--verde-petroleo);
+        }
+
+        .checkbox-container input {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-procesar {
+            display: block;
+            width: 100%;
+            background-color: var(--verde-petroleo);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 25px;
+        }
+
+        .btn-procesar:hover {
+            background-color: var(--verde-oscuro);
+        }
+
+        /* --- ESTILOS DE IMPRESIÓN (EL REPORTE PROFORMA) --- */
+        #area-reporte {
+            display: none;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #area-reporte, #area-reporte * {
+                visibility: visible;
+            }
+            #area-reporte {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: #000;
+                padding: 0;
+            }
+            .header-print {
+                border-bottom: 3px solid #006068;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }
+            .title-print {
+                color: #006068;
+                font-size: 26px;
+                font-weight: bold;
+            }
+            .meta-table, .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 15px;
+            }
+            .meta-table td {
+                padding: 5px 0;
+                font-size: 14px;
+            }
+            .data-table th {
+                background-color: #006068 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                padding: 8px;
+                text-align: left;
+                font-size: 13px;
+            }
+            .data-table td {
+                padding: 8px;
+                border-bottom: 1px solid #ddd;
+                font-size: 13px;
+            }
+            .text-right {
+                text-align: right;
+            }
+            .total-row {
+                font-weight: bold;
+                color: #006068 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>COMERCIALIZADORA CIBRIÁN</h2>
+        
+        <fieldset>
+            <legend> Datos del Pedimento / Operación </legend>
+            
+            <!-- SELECCIONAR CLIENTE -->
+            <div class="form-group">
+                <label for="combo-cliente">Seleccionar Cliente:</label>
+                <div class="selector-cliente-container">
+                    <select id="combo-cliente"></select>
+                    <button class="btn-accion btn-remover" onclick="eliminarClienteActual()" title="Eliminar cliente seleccionado">Remover</button>
+                </div>
+            </div>
+
+            <!-- AGREGAR CLIENTE NUEVO (SIMPLE) -->
+            <div class="form-group" style="background: #eef5f6; padding: 10px; border-radius: 4px;">
+                <label for="entry-nuevo-cliente" style="font-weight: bold; color: var(--verde-oscuro);">➕ Registrar Cliente:</label>
+                <div class="add-cliente-container">
+                    <input type="text" id="entry-nuevo-cliente" placeholder="Ej. VELCRO DE MEXICO">
+                    <button class="btn-accion" onclick="agregarClienteRapido()">Agregar</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+                <label for="entry-pedimento">Número de Pedimento:</label>
+                <input type="text" id="entry-pedimento" placeholder="Ej. 260... ">
+            </div>
+            <div class="form-group">
+                <label for="entry-tc">T.C. Oficial:</label>
+                <input type="number" id="entry-tc" step="0.0001" value="17.5157">
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend> Desglose de Gastos en Dólares (USD) </legend>
+            <div class="form-group"><label>Valor Agencia (USD):</label><input type="number" id="f_moreno_usd" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Monto EXPRESS (USD):</label><input type="number" id="express_usd" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Transporte Alfonso (USD):</label><input type="number" id="transporte_usd" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Gasto Americano (USD):</label><input type="number" id="gasto_ame_usd" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Otros Gastos (USD):</label><input type="number" id="otros_usd" value="0.0" step="0.01"></div>
+        </fieldset>
+
+        <fieldset>
+            <legend> Cargos Locales e Impuestos (MN) </legend>
+            <div class="form-group"><label>Costo Cove (MN):</label><input type="number" id="cove" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Candado Fiscal (MN):</label><input type="number" id="candado" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Contraprestación (MN):</label><input type="number" id="contra" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Comercializadora (MN):</label><input type="number" id="comercializadora_mn" value="0.0" step="0.01"></div>
+            <div class="form-group"><label>Impuestos y Derechos Aduanales (MN):</label><input type="number" id="impuestos_aduanales" value="0.0" step="0.01"></div>
+            
+            <div class="checkbox-container">
+                <input type="checkbox" id="check-preval" checked>
+                <label for="check-preval">¿Cobrar Prevalidación Obligatoria? ($383.00 MN)</label>
+            </div>
+        </fieldset>
+
+        <button class="btn-procesar" onclick="ejecutarGeneration()">PROCESAR Y GENERAR COMPROBANTE PROFORMA</button>
+    </div>
+
+    <div id="area-reporte"></div>
+
+    <script>
+        // Inicializar base de datos compartida o por defecto
+        let clientes = JSON.parse(localStorage.getItem('clientes_db')) || ["CLIENTE GENERAL"];
+        
+        window.onload = function() {
+            actualizarCombo();
+        };
+
+        function actualizarCombo() {
+            const combo = document.getElementById('combo-cliente');
+            combo.innerHTML = '';
+            clientes.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c;
+                opt.innerText = c;
+                combo.appendChild(opt);
+            });
+        }
+
+        function agregarClienteRapido() {
+            let input = document.getElementById('entry-nuevo-cliente');
+            let nuevoC = input.value.trim().toUpperCase();
+
+            if (!nuevoC) {
+                alert("Escribe el nombre de un cliente para poder agregarlo.");
+                return;
+            }
+            if (clientes.includes(nuevoC)) {
+                alert("Este cliente ya se encuentra en la lista.");
+                return;
+            }
+
+            clientes.push(nuevoC);
+            clientes.sort(); // Ordenamiento alfabético automático
+            localStorage.setItem('clientes_db', JSON.stringify(clientes));
+            
+            actualizarCombo();
+            document.getElementById('combo-cliente').value = nuevoC; // Auto-selecciona el recién creado
+            input.value = ''; // Limpiar campo de texto
+        }
+
+        function eliminarClienteActual() {
+            let seleccionado = document.getElementById('combo-cliente').value;
+            if (!seleccionado || seleccionado === "CLIENTE GENERAL") {
+                alert("No se puede eliminar el valor por defecto.");
+                return;
+            }
+
+            if (confirm(`¿Deseas remover a "${seleccionado}" de tu lista de clientes permanente?`)) {
+                clientes = clientes.filter(c => c !== seleccionado);
+                localStorage.setItem('clientes_db', JSON.stringify(clientes));
+                actualizarCombo();
+            }
+        }
+
+        function getFloat(id) {
+            let val = parseFloat(document.getElementById(id).value);
+            return isNaN(val) ? 0.0 : val;
+        }
+
+        function formatoMoneda(num) {
+            return num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function ejecutarGeneration() {
+            let pedimento = document.getElementById('entry-pedimento').value.trim();
+            if (!pedimento) {
+                alert("El número de pedimento es obligatorio para generar el PDF.");
+                return;
+            }
+
+            let clienteFinal = document.getElementById('combo-cliente').value;
+            if (!clienteFinal) {
+                alert("Por favor selecciona un cliente antes de continuar.");
+                return;
+            }
+
+            let tcOficial = getFloat('entry-tc');
+            let tcOperativo = tcOficial + 1.0000;
+
+            // Lógica matemática exacta original
+            let servMn = Math.ceil(getFloat('f_moreno_usd') * tcOficial);
+            let expressMn = Math.ceil(getFloat('express_usd') * tcOperativo);
+            let transporteMn = Math.ceil(getFloat('transporte_usd') * tcOperativo);
+            let gastoAmeMn = Math.ceil(getFloat('gasto_ame_usd') * tcOperativo);
+            let otrosMn = Math.ceil(getFloat('otros_usd') * tcOperativo);
+
+            let cove = getFloat('cove');
+            let candado = getFloat('candado');
+            let contra = getFloat('contra');
+            let comercializadoraMn = getFloat('comercializadora_mn');
+            let impuestosAduanales = getFloat('impuestos_aduanales');
+            let prevalMn = document.getElementById('check-preval').checked ? 383.00 : 0.0;
+
+            let subtotalServ = servMn + 200 + 100 + cove + candado + contra;
+            let iva8 = Math.round((subtotalServ * 0.08) * 100) / 100;
+            let totalHonorarios = subtotalServ + iva8;
+            let totalADepositar = totalHonorarios + comercializadoraMn + expressMn + transporteMn + gastoAmeMn + otrosMn + prevalMn + impuestosAduanales;
+
+            // Construir el cuerpo de la Proforma Dinámica
+            let reportHTML = `
+                <div class="header-print">
+                    <div class="title-print">COMERCIALIZADORA CIBRIÁN</div>
+                </div>
+                <table class="meta-table">
+                    <tr>
+                        <td><strong>CLIENTE:</strong> ${clienteFinal}</td>
+                        <td class="text-right"><strong>PEDIMENTO:</strong> ${pedimento}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T.C. Oficial:</strong> ${tcOficial.toFixed(4)}</td>
+                        <td class="text-right"><strong>T.C. Operativo:</strong> ${tcOperativo.toFixed(4)}</td>
+                    </tr>
+                </table>
+                <table class="data-table">
+                    <tr>
+                        <th>CANT</th>
+                        <th>CONCEPTO</th>
+                        <th class="text-right">IMPORTE (MN)</th>
+                    </tr>
+            `;
+
+            function agregarFila(desc, m) {
+                if (m > 0) {
+                    reportHTML += `<tr><td>1.0</td><td>${desc}</td><td class="text-right">$${formatoMoneda(m)}</td></tr>`;
+                }
+            }
+
+            function agregarFilaEspecial(label, v, bold = false) {
+                if (v > 0) {
+                    let estilo = bold ? "style='font-weight:bold;'" : "";
+                    reportHTML += `<tr ${estilo}><td colspan="2" class="text-right">${label}</td><td class="text-right">$${formatoMoneda(v)}</td></tr>`;
+                }
+            }
+
+            // Inyección de filas válidas
+            agregarFila("Servicios Aduanales", servMn);
+            agregarFila("Enlace de sistema", 200);
+            agregarFila("Equipo papel y fotocopias", 100);
+            agregarFila("Procesamiento Cove", cove);
+            agregarFila("Candado Fiscal", candado);
+            agregarFila("Contraprestación", contra);
+
+            agregarFilaEspecial("SUBTOTAL SERVICIOS:", subtotalServ);
+            agregarFilaEspecial("IVA (8%):", iva8);
+            agregarFilaEspecial("TOTAL HONORARIOS:", totalHonorarios, true);
+
+            agregarFilaEspecial("Comercializadora (MN):", comercializadoraMn);
+            agregarFilaEspecial("Prevalidador e IVA:", prevalMn);
+            agregarFilaEspecial("Impuestos y Derechos Aduanales:", impuestosAduanales);
+            agregarFilaEspecial("Express:", expressMn);
+            agregarFilaEspecial("Transporte Alfonso:", transporteMn);
+            agregarFilaEspecial("Gasto Americano:", gastoAmeMn);
+            agregarFilaEspecial("Otros Gastos:", otrosMn);
+
+            reportHTML += `
+                <tr class="total-row">
+                    <td colspan="2" class="text-right">TOTAL A DEPOSITAR:</td>
+                    <td class="text-right">$${formatoMoneda(totalADepositar)} MN</td>
+                </tr>
+                </table>
+            `;
+
+            // Insertar reporte en el área oculta y mandar a imprimir de forma nativa
+            document.getElementById('area-reporte').innerHTML = reportHTML;
+            window.print();
+        }
+    </script>
+</body>
+</html>

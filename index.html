@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comercializadora Cibrián - Sistema LRM</title>
+    <style>
+        :root {
+            --verde-petroleo: #006068;
+            --verde-oscuro: #004D54;
+            --bg-color: #F8F9FA;
+            --texto-color: #333333;
+            --blanco: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--texto-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .menu-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--blanco);
+            padding: 40px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border-top: 6px solid var(--verde-petroleo);
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: var(--verde-oscuro);
+            font-size: 24px;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-modulo {
+            display: block;
+            background-color: var(--verde-petroleo);
+            color: var(--blanco);
+            text-decoration: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn-modulo:hover {
+            background-color: var(--verde-oscuro);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-modulo:active {
+            transform: translateY(0);
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="menu-container">
+        <h1>COMERCIALIZADORA CIBRIÁN</h1>
+        <div class="subtitle">Panel de Control de Módulos Automatizados</div>
+        
+        <div class="menu-grid">
+            <a href="ModuloInvoice.html" class="btn-modulo" target="_blank">Módulo Invoice</a>
+            <a href="ModuloProformas.html" class="btn-modulo" target="_blank">Módulo Proformas</a>
+            <a href="ModuloInterplanta.html" class="btn-modulo" target="_blank">Módulo Interplanta</a>
+            <a href="Módulode Revisiones.html" class="btn-modulo" target="_blank">Revisiones Diarias</a>
+            <a href="concentrador.html" class="btn-modulo" target="_blank">Concentrador Capsa</a>
+        </div>
+
+        <div class="footer">
+            Sistema de Automatización Logística LRM • v2.5
+        </div>
+    </div>
+
+</body>
+</html>

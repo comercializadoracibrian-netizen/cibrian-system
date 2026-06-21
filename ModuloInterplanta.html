@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cibrián System - Control Interplanta Compartido</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --verde-petroleo: #004d4d;
+            --verde-brillante: #006068;
+            --verde-hover: #008b99;
+            --texto-principal: #ffffff;
+            --texto-secundario: #a0a0a0;
+            --borde: #333333;
+            --rojo: #c0392b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--texto-principal);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-modulo {
+            background-color: var(--verde-petroleo);
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--verde-hover);
+        }
+
+        .header-modulo h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        .header-modulo p { margin: 5px 0 0 0; color: var(--texto-secundario); font-size: 0.95rem; }
+
+        .contenedor-operativo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .columna {
+            background-color: var(--bg-card);
+            border: 1px solid var(--borde);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            color: var(--verde-hover);
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--borde);
+            padding-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.9rem; font-weight: bold; color: var(--texto-secundario); margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; background-color: #2b2b2b; border: 1px solid var(--borde); border-radius: 4px; color: white; font-size: 0.95rem; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: var(--verde-hover); }
+
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: background 0.2s; color: white; margin-bottom: 8px; }
+        .btn-primario { background-color: var(--verde-brillante); }
+        .btn-primario:hover { background-color: var(--verde-hover); }
+        .btn-secundario { background-color: #1e6b7b; }
+        .btn-secundario:hover { background-color: #288fa4; }
+        .btn-compartir { background-color: #27ae60; }
+        .btn-compartir:hover { background-color: #2ecc71; }
+        .btn-danger { background-color: var(--rojo); }
+        .btn-danger:hover { background-color: #e74c3c; }
+        .btn-accion { background-color: var(--verde-petroleo); font-size: 1.1rem; padding: 15px; margin-bottom: 0; }
+        .btn-accion:hover { background-color: var(--verde-brillante); }
+
+        .tabla-container { margin-top: 15px; border: 1px solid var(--borde); border-radius: 4px; overflow: hidden; max-height: 220px; overflow-y: auto; flex-grow: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
+        th { background-color: var(--verde-petroleo); color: white; padding: 10px; position: sticky; top: 0; font-weight: 600; }
+        td { padding: 8px 10px; border-bottom: 1px solid var(--borde); background-color: #1a1a1a; }
+        tr:hover td { background-color: #252525; cursor: pointer; }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .acciones-globales { grid-column: span 2; display: flex; gap: 15px; margin-top: 10px; }
+        
+        .input-file-oculto { display: none; }
+
+        /* Estilo especial para resaltar informativos globales */
+        .badge-tarimas {
+            background-color: #2b2b2b;
+            border: 1px dashed var(--verde-hover);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: var(--texto-principal);
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-modulo">
+        <h1>Soporte de Previo — Conciliación Interplanta Cruzada</h1>
+        <p>Comercializadora Cibrián & Logistics | Operación Dividida (Almacén vs Oficina)</p>
+    </div>
+
+    <div class="contenedor-operativo">
+        
+        <div class="columna">
+            <h2>📥 Captura Acumulativa (Almacén - Lucio)</h2>
+            
+            <!-- CAMBIO AQUÍ: Se cambió el select por un input de texto vinculando un datalist -->
+            <div class="form-group">
+                <label for="combo_item">Número de Parte / ITEM:</label>
+                <input type="text" id="combo_item" list="lista_items" placeholder="Escribe o selecciona un ITEM...">
+                <datalist id="lista_items"></datalist>
+            </div>
+            
+            <div class="form-group">
+                <label for="cantidad_piso">Cantidad Medida en Piso:</label>
+                <input type="number" id="cantidad_piso" step="0.01" placeholder="0.00">
+            </div>
+            
+            <button class="btn btn-primario" onclick="registrarPiso()">📥 Registrar Movimiento en Almacén</button>
+            
+            <div class="form-group" style="margin-top: 20px; border-top: 1px solid var(--borde); padding-top: 15px;">
+                <label for="total_tarimas" style="color: var(--verde-hover);">Cantidad Total de Tarimas Recibidas:</label>
+                <input type="number" id="total_tarimas" placeholder="Ej. 14" min="0" onchange="guardarTarimasLocal()">
+            </div>
+            
+            <button class="btn btn-compartir" onclick="exportarDatosPiso()">💾 Exportar Conteo de Piso para Oficina</button>
+
+            <h2>Monitoreo de Material en Almacén</h2>
+            <div class="tabla-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ITEM / PARTE</th>
+                            <th class="text-right">TOTAL CONTEO PISO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody_piso"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="columna">
+            <h2>🔗 Comprobación Contra Embarques (Oficina - Dylan)</h2>
+            
+            <div class="form-group">
+                <label for="facturas_global">Folios de Facturas (Separados por Comas):</label>
+                <input type="text" id="facturas_global" value="192212, 192213">
+            </div>
+            
+            <label style="margin-bottom: 10px; color: var(--verde-hover);">Asignación Comercial Directa para el ITEM:</label>
+            
+            <div class="form-group">
+                <label>Cantidad Comercial / Factura 1:</label>
+                <input type="number" id="emb1" step="0.01" value="0.0">
+            </div>
+            <div class="form-group">
+                <label>Cantidad Comercial / Factura 2 (Opcional):</label>
+                <input type="number" id="emb2" step="0.01" value="0.0">
+            </div>
+            <div class="form-group">
+                <label>Cantidad Comercial / Factura 3 (Opcional):</label>
+                <input type="number" id="emb3" step="0.01" value="0.0">
+            </div>
+            
+            <button class="btn btn-secundario" onclick="vincularCantidades()">🔗 Vincular Cantidades Interplantas</button>
+            
+            <input type="file" id="file_piso" class="input-file-oculto" onchange="importarDatosPiso(event)">
+            <button class="btn btn-compartir" onclick="document.getElementById('file_piso').click()">📂 Cargar Conteo de Almacén (.cibrian)</button>
+
+            <div id="vista_tarimas_oficina" class="badge-tarimas">Tarimas reportadas por almacén: <b>0</b></div>
+
+            <h2>Desglose de Facturas Registradas</h2>
+            <div class="tabla-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ITEM / PARTE</th>
+                            <th class="text-center">FACTURA ASOCIADA</th>
+                            <th class="text-right">CANTIDAD ASIGNADA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody_factura"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="acciones-globales">
+            <button class="btn btn-primario btn-accion" style="flex-grow: 4;" onclick="procesarYGenerarPDF()">⚙️ Calcular Diferencias y Exportar PDF Ejecutivo</button>
+            <button class="btn btn-danger" style="flex-grow: 1;" onclick="resetearCiclo()">🗑️ Reiniciar Pantalla</button>
+        </div>
+
+    </div>
+
+    <script>
+        const CATALOGO_BASE = ['126937', '127888', '129302', '217237MX', '80024N', '80027N', '80030N', '90340MXN', '90927MXN'];
+        
+        let catalogoItems = [...CATALOGO_BASE];
+        let registrosPiso = [];     
+        let registrosFactura = [];  
+        let cantidadTarimasGlobal = 0; 
+
+        window.onload = function() {
+            cargarLocalStorage();
+            inicializarCombobox();
+            actualizarTablaPiso();
+            actualizarTablaFactura();
+            actualizarVistaTarimas();
+        };
+
+        // MODIFICADO: Ahora llena las opciones dentro del datalist dinámico
+        function inicializarCombobox() {
+            const dl = document.getElementById('lista_items');
+            dl.innerHTML = '';
+            catalogoItems.forEach(item => {
+                let opt = document.createElement('option');
+                opt.value = item;
+                dl.appendChild(opt);
+            });
+        }
+
+        function sincronizarCombobox(itemCodigo) {
+            itemCodigo = itemCodigo.trim().toUpperCase();
+            if(itemCodigo && !catalogoItems.includes(itemCodigo)) {
+                catalogoItems.push(itemCodigo);
+                inicializarCombobox();
+            }
+            document.getElementById('combo_item').value = itemCodigo;
+        }
+
+        // MODIFICADO: Agrega automáticamente el ítem nuevo al catálogo si se escribió a mano
+        function registrarPiso() {
+            let item = document.getElementById('combo_item').value.trim().toUpperCase();
+            const cantidad = parseFloat(document.getElementById('cantidad_piso').value);
+
+            if (!item || isNaN(cantidad)) { alert("Por favor seleccione o escriba un ITEM e ingrese una cantidad válida."); return; }
+            if (cantidad < 0) { alert("La cantidad en piso no puede ser negativa."); return; }
+
+            // Si el código que escribió Lucio es nuevo, lo guardamos en la memoria del catálogo dinámico
+            if (!catalogoItems.includes(item)) {
+                catalogoItems.push(item);
+                inicializarCombobox();
+            }
+
+            registrosPiso.push({ ITEM: item, CANTIDAD: cantidad });
+            
+            // Limpiamos los campos para dejar lista la siguiente captura
+            document.getElementById('combo_item').value = '';
+            document.getElementById('cantidad_piso').value = '';
+            
+            guardarLocalStorage();
+            actualizarTablaPiso();
+        }
+
+        function guardarTarimasLocal() {
+            let val = parseInt(document.getElementById('total_tarimas').value);
+            cantidadTarimasGlobal = isNaN(val) ? 0 : val;
+            guardarLocalStorage();
+            actualizarVistaTarimas();
+        }
+
+        function actualizarVistaTarimas() {
+            document.getElementById('total_tarimas').value = cantidadTarimasGlobal;
+            document.getElementById('vista_tarimas_oficina').innerHTML = `Tarimas reportadas por almacén: <b>${cantidadTarimasGlobal}</b>`;
+        }
+
+        function actualizarTablaPiso() {
+            const tbody = document.getElementById('tbody_piso');
+            tbody.innerHTML = '';
+            let totalesPiso = {};
+            registrosPiso.forEach(reg => { totalesPiso[reg.ITEM] = (totalesPiso[reg.ITEM] || 0) + reg.CANTIDAD; });
+
+            for (let item in totalesPiso) {
+                let tr = document.createElement('tr');
+                tr.onclick = () => sincronizarCombobox(item);
+                tr.innerHTML = `<td><b>${item}</b></td><td class="text-right">${totalesPiso[item].toLocaleString('en-US', {minimumFractionDigits: 2})}</td>`;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function vincularCantidades() {
+            const itemSel = document.getElementById('combo_item').value.trim().toUpperCase();
+            const facturaSel = document.getElementById('facturas_global').value.trim().toUpperCase();
+            
+            if (!itemSel) { alert("Por favor seleccione o escriba un ITEM válido."); return; }
+            if (!facturaSel) { alert("Indique el número de Factura / Embarque."); return; }
+
+            const c1 = parseFloat(document.getElementById('emb1').value) || 0;
+            const c2 = parseFloat(document.getElementById('emb2').value) || 0;
+            const c3 = parseFloat(document.getElementById('emb3').value) || 0;
+            const totalEstaCaptura = c1 + c2 + c3;
+
+            if (totalEstaCaptura <= 0) { alert("La suma de las cantidades facturadas debe ser mayor a 0."); return; }
+
+            let registroExistente = registrosFactura.find(r => r.ITEM === itemSel);
+            if (registroExistente) {
+                let resp = confirm(`El ITEM ${itemSel} ya existe.\n\n¿Deseas REEMPLAZAR el valor antiguo?\n(Aceptar = Reemplazar / Cancelar = Sumar)`);
+                if (resp) { registroExistente.CANT_FACTURA = totalEstaCaptura; } 
+                else { registroExistente.CANT_FACTURA += totalEstaCaptura; }
+                registroExistente.FACTURA = facturaSel;
+            } else {
+                registrosFactura.push({ ITEM: itemSel, CANT_FACTURA: totalEstaCaptura, FACTURA: facturaSel });
+            }
+
+            guardarLocalStorage();
+            actualizarTablaFactura();
+            document.getElementById('combo_item').value = '';
+            document.getElementById('emb1').value = '0.0';
+            document.getElementById('emb2').value = '0.0';
+            document.getElementById('emb3').value = '0.0';
+        }
+
+        function actualizarTablaFactura() {
+            const tbody = document.getElementById('tbody_factura');
+            tbody.innerHTML = '';
+            registrosFactura.forEach(reg => {
+                let tr = document.createElement('tr');
+                tr.onclick = () => sincronizarCombobox(reg.ITEM);
+                tr.innerHTML = `<td class="text-center"><b>${reg.ITEM}</b></td><td class="text-center">${reg.FACTURA}</td><td class="text-right">${reg.CANT_FACTURA.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportarDatosPiso() {
+            if (registrosPiso.length === 0) { alert("No tienes datos en piso para exportar."); return; }
+            
+            const paqueteExportacion = {
+                tarimas: cantidadTarimasGlobal,
+                conteo: registrosPiso
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(paqueteExportacion));
+            const dlAnchorElem = document.createElement('a');
+            
+            let fecha = new Date().toISOString().slice(0,10);
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `Conteo_Piso_${fecha}.cibrian`);
+            dlAnchorElem.click();
+        }
+
+        function importarDatosPiso(event) {
+            const input = event.target;
+            const reader = new FileReader();
+            
+            reader.onload = function() {
+                try {
+                    const datosCargados = JSON.parse(reader.result);
+                    
+                    if (datosCargados.conteo && Array.isArray(datosCargados.conteo)) {
+                        registrosPiso = datosCargados.conteo;
+                        cantidadTarimasGlobal = datosCargados.tarimas || 0;
+                    } else if (Array.isArray(datosCargados)) {
+                        registrosPiso = datosCargados;
+                        cantidadTarimasGlobal = 0;
+                    } else {
+                        alert("El formato del archivo no es válido.");
+                        return;
+                    }
+
+                    registrosPiso.forEach(r => {
+                        if(!catalogoItems.includes(r.ITEM)) catalogoItems.push(r.ITEM);
+                    });
+                    
+                    inicializarCombobox();
+                    actualizarTablaPiso();
+                    actualizarVistaTarimas();
+                    guardarLocalStorage();
+                    alert("¡Datos de Almacén y Conteo de Tarimas cargados con éxito!");
+                    
+                } catch(e) { alert("Error al leer el archivo."); }
+            };
+            if(input.files[0]) reader.readAsText(input.files[0]);
+        }
+
+        function procesarYGenerarPDF() {
+            let totalesPiso = {};
+            registrosPiso.forEach(reg => { totalesPiso[reg.ITEM] = (totalesPiso[reg.ITEM] || 0) + reg.CANTIDAD; });
+
+            let totalesFactura = {};
+            registrosFactura.forEach(reg => { totalesFactura[reg.ITEM] = (totalesFactura[reg.ITEM] || 0) + reg.CANT_FACTURA; });
+
+            if (Object.keys(totalesPiso).length === 0 || registrosFactura.length === 0) {
+                alert("Atención: Para generar la conciliación necesitas tener llenas AMBAS columnas (Conteo de piso e información de facturas).");
+                return;
+            }
+
+            let pedimentoInput = prompt("Dato Obligatorio:\nIngrese los últimos 7 dígitos del Número de Pedimento:");
+            if (pedimentoInput === null) return;
+            pedimentoInput = pedimentoInput.trim();
+
+            if (!/^\d{7}$/.test(pedimentoInput)) { alert("Error: El Pedimento debe tener exactamente 7 dígitos."); return; }
+
+            let todosLosItems = Array.from(new Set([...Object.keys(totalesPiso), ...Object.keys(totalesFactura)])).sort();
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFillColor(0, 77, 77); doc.rect(15, 15, 180, 22, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+            doc.text("COMERCIALIZADORA CIBRIÁN", 20, 23);
+            doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+            doc.text("Soporte de Previo — Conciliación Interplanta Cruzada", 20, 31);
+
+            doc.setTextColor(0, 77, 77); doc.setFont("helvetica", "bold");
+            doc.text("Destinatario:", 15, 47); 
+            doc.text("Factura / Emb:", 15, 54);
+            doc.text("Total Tarimas:", 15, 61); 
+            
+            doc.text("Fecha Emisión:", 110, 47); 
+            doc.text("Num Pedimento:", 110, 54);
+
+            doc.setTextColor(50, 50, 50); doc.setFont("helvetica", "normal");
+            doc.text("Velcro de Mexico", 45, 47);
+            let facturasSet = Array.from(new Set(registrosFactura.map(r => r.FACTURA))).join(", ");
+            doc.text(facturasSet, 45, 54);
+            doc.text(cantidadTarimasGlobal.toString(), 45, 61); 
+            
+            doc.text(new Date().toLocaleString('es-MX'), 142, 47); 
+            doc.text(pedimentoInput, 142, 54);
+
+            doc.setDrawColor(0, 77, 77); doc.line(15, 65, 195, 65);
+
+            let y = 75;
+            doc.setFillColor(0, 77, 77); doc.rect(15, y-6, 180, 8, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+            doc.text("ITEM / PARTE", 17, y-1); doc.text("CANT. FACTURA", 55, y-1); doc.text("CONTEO PISO", 90, y-1); doc.text("DIFERENCIA", 125, y-1); doc.text("ESTATUS", 160, y-1);
+
+            doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal");
+
+            todosLosItems.forEach((item, index) => {
+                y += 8;
+                let fac = totalesFactura[item] || 0;
+                let piso = totalesPiso[item] || 0;
+                let dif = piso - fac;
+                let estatus = "EXACTO";
+                
+                if (dif > 0) estatus = `SOBRANTE (+${dif.toFixed(2)})`;
+                if (dif < 0) estatus = `FALTANTE (${dif.toFixed(2)})`;
+
+                if (index % 2 === 0) { doc.setFillColor(248, 251, 251); doc.rect(15, y-6, 180, 8, 'F'); }
+
+                doc.setFont("helvetica", "bold"); doc.text(item, 17, y-1); doc.setFont("helvetica", "normal");
+                doc.text(fac.toFixed(2), 55, y-1); doc.text(piso.toFixed(2), 90, y-1);
+
+                if (dif > 0) doc.setTextColor(39, 174, 96);
+                else if (dif < 0) doc.setTextColor(192, 57, 43);
+                else doc.setTextColor(0, 0, 0);
+                doc.text((dif >= 0 ? "+" : "") + dif.toFixed(2), 125, y-1);
+                
+                if(dif === 0) doc.setFillColor(212, 237, 218);
+                else if(dif > 0) doc.setFillColor(255, 243, 205);
+                else doc.setFillColor(248, 215, 218);
+                doc.rect(158, y-6, 37, 8, 'F');
+                
+                if(dif === 0) doc.setTextColor(21, 87, 36);
+                else if(dif > 0) doc.setTextColor(133, 100, 4);
+                else doc.setTextColor(114, 28, 36);
+                
+                doc.setFont("helvetica", "bold"); doc.text(estatus, 160, y-1);
+                doc.setTextColor(0,0,0); doc.setFont("helvetica", "normal");
+            });
+
+            y += 15; doc.setFontSize(8); doc.setTextColor(100, 100, 100);
+            doc.text("Este documento es un soporte de auditoría cruzada emitido por el entorno Cibrian System v10.5.", 15, y);
+
+            doc.save(`Soporte_Conciliacion_${pedimentoInput}.pdf`);
+        }
+
+        function guardarLocalStorage() {
+            localStorage.setItem('interplanta_piso', JSON.stringify(registrosPiso));
+            localStorage.setItem('interplanta_factura', JSON.stringify(registrosFactura));
+            localStorage.setItem('interplanta_tarimas', cantidadTarimasGlobal);
+        }
+
+        function cargarLocalStorage() {
+            const pisoLocal = localStorage.getItem('interplanta_piso');
+            const facLocal = localStorage.getItem('interplanta_factura');
+            const tarimasLocal = localStorage.getItem('interplanta_tarimas');
+            
+            if (pisoLocal) registrosPiso = JSON.parse(pisoLocal);
+            if (facLocal) registrosFactura = JSON.parse(facLocal);
+            if (tarimasLocal) cantidadTarimasGlobal = parseInt(tarimasLocal) || 0;
+            
+            // Forzar que los ítems guardados localmente se sumen al catálogo al recargar la página
+            registrosPiso.forEach(r => {
+                if(!catalogoItems.includes(r.ITEM)) catalogoItems.push(r.ITEM);
+            });
+            registrosFactura.forEach(r => {
+                if(!catalogoItems.includes(r.ITEM)) catalogoItems.push(r.ITEM);
+            });
+        }
+
+        function resetearCiclo() {
+            if (confirm("¿Limpiar los datos de la pantalla actual?")) {
+                registrosPiso = []; registrosFactura = []; cantidadTarimasGlobal = 0;
+                catalogoItems = [...CATALOGO_BASE]; // Resetea también el catálogo al base
+                localStorage.removeItem('interplanta_piso'); 
+                localStorage.removeItem('interplanta_factura');
+                localStorage.removeItem('interplanta_tarimas');
+                inicializarCombobox(); actualizarTablaPiso(); actualizarTablaFactura(); actualizarVistaTarimas();
+            }
+        }
+    </script>
+</body>
+</html>
