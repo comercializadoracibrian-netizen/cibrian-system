@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comercializadora Cibrián - Sistema LRM</title>
+    
+    <!-- Bloqueo de Seguridad para Acceso al Sistema -->
+    <script>
+        (function() {
+            var claveCorrecta = "1DylBruss2"; // <-- CAMBIA ESTO POR TU CLAVE
+            var acceso = prompt("Introduce la contraseña de acceso al Sistema LRM:");
+            
+            if (acceso !== claveCorrecta) {
+                alert("Contraseña incorrecta. Acceso denegado.");
+                window.location.href = "about:blank"; // Envía a una página en blanco
+                // Por seguridad extra, vaciamos el documento de inmediato si falla
+                document.documentElement.innerHTML = ""; 
+            }
+        })();
+    </script>
+
     <style>
         :root {
             --verde-petroleo: #006068;
