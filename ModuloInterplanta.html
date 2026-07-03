@@ -83,8 +83,8 @@
         .tabla-container { margin-top: 15px; border: 1px solid var(--borde); border-radius: 4px; overflow: hidden; max-height: 220px; overflow-y: auto; flex-grow: 1; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
         th { background-color: var(--verde-petroleo); color: white; padding: 10px; position: sticky; top: 0; font-weight: 600; }
-        td { padding: 8px 10px; border-bottom: 1px solid var(--borde); background-color: #1a1a1a; }
-        tr:hover td { background-color: #252525; cursor: pointer; }
+        td { padding: 8px 10px; border-bottom: 1px solid var(--borde); background-color: #1a1a1a; vertical-align: middle; }
+        tr:hover td { background-color: #252525; }
 
         .text-right { text-align: right; }
         .text-center { text-align: center; }
@@ -92,7 +92,6 @@
         
         .input-file-oculto { display: none; }
 
-        /* Estilo especial para resaltar informativos globales */
         .badge-tarimas {
             background-color: #2b2b2b;
             border: 1px dashed var(--verde-hover);
@@ -102,6 +101,22 @@
             color: var(--texto-principal);
             margin-top: 10px;
             text-align: center;
+        }
+
+        /* Estilo para los botones de eliminar en la tabla */
+        .btn-tabla-remover {
+            background-color: var(--rojo);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-tabla-remover:hover {
+            background-color: #e74c3c;
         }
     </style>
 </head>
@@ -117,7 +132,6 @@
         <div class="columna">
             <h2>📥 Captura Acumulativa (Almacén - Lucio)</h2>
             
-            <!-- CAMBIO AQUÍ: Se cambió el select por un input de texto vinculando un datalist -->
             <div class="form-group">
                 <label for="combo_item">Número de Parte / ITEM:</label>
                 <input type="text" id="combo_item" list="lista_items" placeholder="Escribe o selecciona un ITEM...">
@@ -145,6 +159,7 @@
                         <tr>
                             <th>ITEM / PARTE</th>
                             <th class="text-right">TOTAL CONTEO PISO</th>
+                            <th class="text-center" style="width: 70px;">ACCION</th>
                         </tr>
                     </thead>
                     <tbody id="tbody_piso"></tbody>
@@ -188,8 +203,9 @@
                     <thead>
                         <tr>
                             <th>ITEM / PARTE</th>
-                            <th class="text-center">FACTURA ASOCIADA</th>
-                            <th class="text-right">CANTIDAD ASIGNADA</th>
+                            <th class="text-center">FACTURA</th>
+                            <th class="text-right">CANTIDAD</th>
+                            <th class="text-center" style="width: 70px;">ACCION</th>
                         </tr>
                     </thead>
                     <tbody id="tbody_factura"></tbody>
@@ -220,7 +236,6 @@
             actualizarVistaTarimas();
         };
 
-        // MODIFICADO: Ahora llena las opciones dentro del datalist dinámico
         function inicializarCombobox() {
             const dl = document.getElementById('lista_items');
             dl.innerHTML = '';
@@ -240,7 +255,6 @@
             document.getElementById('combo_item').value = itemCodigo;
         }
 
-        // MODIFICADO: Agrega automáticamente el ítem nuevo al catálogo si se escribió a mano
         function registrarPiso() {
             let item = document.getElementById('combo_item').value.trim().toUpperCase();
             const cantidad = parseFloat(document.getElementById('cantidad_piso').value);
@@ -248,7 +262,6 @@
             if (!item || isNaN(cantidad)) { alert("Por favor seleccione o escriba un ITEM e ingrese una cantidad válida."); return; }
             if (cantidad < 0) { alert("La cantidad en piso no puede ser negativa."); return; }
 
-            // Si el código que escribió Lucio es nuevo, lo guardamos en la memoria del catálogo dinámico
             if (!catalogoItems.includes(item)) {
                 catalogoItems.push(item);
                 inicializarCombobox();
@@ -256,7 +269,6 @@
 
             registrosPiso.push({ ITEM: item, CANTIDAD: cantidad });
             
-            // Limpiamos los campos para dejar lista la siguiente captura
             document.getElementById('combo_item').value = '';
             document.getElementById('cantidad_piso').value = '';
             
@@ -264,9 +276,26 @@
             actualizarTablaPiso();
         }
 
+        function removerItemPiso(itemCodigo) {
+            if (confirm(`¿Seguro que deseas remover el ITEM "${itemCodigo}" del conteo de Almacén?`)) {
+                registrosPiso = registrosPiso.filter(reg => reg.ITEM !== itemCodigo);
+                guardarLocalStorage();
+                actualizarTablaPiso();
+            }
+        }
+
+        function removerItemFactura(itemCodigo) {
+            if (confirm(`¿Seguro que deseas remover el ITEM "${itemCodigo}" del desglose de Facturas?`)) {
+                registrosFactura = registrosFactura.filter(reg => reg.ITEM !== itemCodigo);
+                guardarLocalStorage();
+                actualizarTablaFactura();
+            }
+        }
+
         function guardarTarimasLocal() {
             let val = parseInt(document.getElementById('total_tarimas').value);
-            cantidadTarimasGlobal = isNaN(val) ? 0 : val;
+            amountTarimasGlobal = isNaN(val) ? 0 : val;
+            cantidadTarimasGlobal = amountTarimasGlobal;
             guardarLocalStorage();
             actualizarVistaTarimas();
         }
@@ -284,8 +313,25 @@
 
             for (let item in totalesPiso) {
                 let tr = document.createElement('tr');
-                tr.onclick = () => sincronizarCombobox(item);
-                tr.innerHTML = `<td><b>${item}</b></td><td class="text-right">${totalesPiso[item].toLocaleString('en-US', {minimumFractionDigits: 2})}</td>`;
+                
+                let tdItem = document.createElement('td');
+                tdItem.innerHTML = `<b>${item}</b>`;
+                tdItem.style.cursor = 'pointer';
+                tdItem.onclick = () => sincronizarCombobox(item);
+                
+                let tdCantidad = document.createElement('td');
+                tdCantidad.className = 'text-right';
+                tdCantidad.innerText = totalesPiso[item].toLocaleString('en-US', {minimumFractionDigits: 2});
+                tdCantidad.style.cursor = 'pointer';
+                tdCantidad.onclick = () => sincronizarCombobox(item);
+
+                let tdAccion = document.createElement('td');
+                tdAccion.className = 'text-center';
+                tdAccion.innerHTML = `<button class="btn-tabla-remover" onclick="removerItemPiso('${item}')" title="Eliminar este ítem">🗑️</button>`;
+
+                tr.appendChild(tdItem);
+                tr.appendChild(tdCantidad);
+                tr.appendChild(tdAccion);
                 tbody.appendChild(tr);
             }
         }
@@ -327,8 +373,33 @@
             tbody.innerHTML = '';
             registrosFactura.forEach(reg => {
                 let tr = document.createElement('tr');
-                tr.onclick = () => sincronizarCombobox(reg.ITEM);
-                tr.innerHTML = `<td class="text-center"><b>${reg.ITEM}</b></td><td class="text-center">${reg.FACTURA}</td><td class="text-right">${reg.CANT_FACTURA.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>`;
+                
+                let tdItem = document.createElement('td');
+                tdItem.className = 'text-center';
+                tdItem.innerHTML = `<b>${reg.ITEM}</b>`;
+                tdItem.style.cursor = 'pointer';
+                tdItem.onclick = () => sincronizarCombobox(reg.ITEM);
+
+                let tdFactura = document.createElement('td');
+                tdFactura.className = 'text-center';
+                tdFactura.innerText = reg.FACTURA;
+                tdFactura.style.cursor = 'pointer';
+                tdFactura.onclick = () => sincronizarCombobox(reg.ITEM);
+
+                let tdCantidad = document.createElement('td');
+                tdCantidad.className = 'text-right';
+                tdCantidad.innerText = reg.CANT_FACTURA.toLocaleString('en-US', {minimumFractionDigits: 2});
+                tdCantidad.style.cursor = 'pointer';
+                tdCantidad.onclick = () => sincronizarCombobox(reg.ITEM);
+
+                let tdAccion = document.createElement('td');
+                tdAccion.className = 'text-center';
+                tdAccion.innerHTML = `<button class="btn-tabla-remover" onclick="removerItemFactura('${reg.ITEM}')" title="Eliminar esta línea">🗑️</button>`;
+
+                tr.appendChild(tdItem);
+                tr.appendChild(tdFactura);
+                tr.appendChild(tdCantidad);
+                tr.appendChild(tdAccion);
                 tbody.appendChild(tr);
             });
         }
@@ -493,7 +564,6 @@
             if (facLocal) registrosFactura = JSON.parse(facLocal);
             if (tarimasLocal) cantidadTarimasGlobal = parseInt(tarimasLocal) || 0;
             
-            // Forzar que los ítems guardados localmente se sumen al catálogo al recargar la página
             registrosPiso.forEach(r => {
                 if(!catalogoItems.includes(r.ITEM)) catalogoItems.push(r.ITEM);
             });
@@ -505,7 +575,7 @@
         function resetearCiclo() {
             if (confirm("¿Limpiar los datos de la pantalla actual?")) {
                 registrosPiso = []; registrosFactura = []; cantidadTarimasGlobal = 0;
-                catalogoItems = [...CATALOGO_BASE]; // Resetea también el catálogo al base
+                catalogoItems = [...CATALOGO_BASE];
                 localStorage.removeItem('interplanta_piso'); 
                 localStorage.removeItem('interplanta_factura');
                 localStorage.removeItem('interplanta_tarimas');
