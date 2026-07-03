@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Moreno's - Módulo de Invoices</title>
     <style>
+        /* RESET UNIVERSAL PARA CONTROL DE ANCHOS */
+        * {
+            box-sizing: border-box;
+        }
+
         :root {
             --verde-petroleo: #006068;
             --verde-oscuro: #004D54;
@@ -78,7 +83,6 @@
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            box-sizing: border-box;
             font-size: 14px;
             background-color: #fff;
         }
@@ -151,7 +155,7 @@
                 width: 100%;
                 background: white;
                 color: #000;
-                padding: 10px;
+                padding: 20px; /* Incrementado para mejor margen de impresión */
             }
             .invoice-header {
                 border-bottom: 3px solid #006068;
@@ -181,6 +185,7 @@
                 width: 100%;
                 border-collapse: collapse;
                 margin-top: 15px;
+                table-layout: fixed; /* Fuerza el ajuste de las columnas al 100% */
             }
             .invoice-table th {
                 border-bottom: 2px solid #006068;
@@ -194,6 +199,7 @@
                 padding: 10px 5px;
                 border-bottom: 1px solid #ddd;
                 font-size: 13px;
+                word-wrap: break-word; /* Evita desbordes de texto */
             }
             .text-right {
                 text-align: right;
@@ -305,6 +311,7 @@
 
         function agregarClienteRapido() {
             let input = document.getElementById('nuevo-cliente-nombre');
+            let combo = document.getElementById('combo-cliente');
             let nombre = input.value.trim().toUpperCase();
             
             if (!nombre) {
@@ -394,6 +401,10 @@
                     </div>
                 </div>
                 <table class="invoice-table">
+                    <colgroup>
+                        <col style="width: 70%;">
+                        <col style="width: 30%;">
+                    </colgroup>
                     <tr>
                         <th>DESCRIPTION</th>
                         <th class="text-right">AMOUNT (USD)</th>
