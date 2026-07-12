@@ -15,11 +15,10 @@ SCOPES = ['https://www.googleapis.com/auth/drive.file']
 PARENT_FOLDER_ID = "1AfWS3WlT5j68O5nJ3LD5wrHTp1Qx_fhu"
 
 def get_drive_service():
-    # Render guarda el archivo secreto en la raíz o en /etc/secrets/creds.json si se configuró así.
-    # Primero buscamos en la raíz donde lo nombramos.
+    # Render guarda el archivo secreto en la raíz o en /etc/secrets/creds.json
     creds_path = 'creds.json'
     if not os.path.exists(creds_path):
-        creds_path = '/etc/secrets/creds.json' # Ruta alternativa por si Render lo movió a secrets
+        creds_path = '/etc/secrets/creds.json'
         
     creds = service_account.Credentials.from_service_account_file(creds_path, scopes=SCOPES)
     return build('drive', 'v3', credentials=creds)
@@ -82,7 +81,7 @@ HTML_FORM = '''
 def index():
     return render_template_string(HTML_FORM)
 
-@app.route('/generar', method=['POST'])
+@app.route('/generar', methods=['POST'])
 def generar():
     nombre_reg = request.form.get('nombre_reg')
     tiene_pk = request.form.get('tiene_pk')
@@ -106,12 +105,10 @@ def generar():
     for idx, f in enumerate(archivos_fotos):
         if f.filename == '': continue
         
-        # Guardar imagen temporal para procesar con Pillow
         img_temp_path = f"temp_{idx}_{f.filename}"
         f.save(img_temp_path)
         
         try:
-            # Optimizar y comprimir la imagen para que el PDF no pese demasiado
             img = Image.open(img_temp_path)
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
@@ -120,34 +117,29 @@ def generar():
             optimized_img_path = f"opt_{idx}.jpg"
             img.save(optimized_img_path, "JPEG", quality=70)
 
-            # Dibujar la foto en el PDF
             c.drawImage(optimized_img_path, 80, y_position, width=400, height=250, preserveAspectRatio=True)
             
-            # Limpieza de imágenes optimizadas
             if os.path.exists(optimized_img_path): os.remove(optimized_img_path)
         except Exception as e:
             print(f"Error procesando imagen {f.filename}: {e}")
 
         if os.path.exists(img_temp_path): os.remove(img_temp_path)
         
-        # Controlar saltos de página (1 foto por página para orden visual limpio)
         c.showPage()
-        # En las siguientes páginas, resetear la posición inicial de dibujo
         y_position = 450
 
     c.save()
 
-    # Subir el PDF final directamente a Google Drive usando la API
+    # Subir el PDF directamente a Google Drive
     drive_id = upload_to_drive(pdf_path, pdf_name)
 
-    # Limpiar el PDF local
     if os.path.exists(pdf_path):
         os.remove(pdf_path)
 
     if drive_id:
         return f'<div style="font-family:sans-serif; text-align:center; margin-top:50px;"><h2>¡Éxito!</h2><p>Reporte enviado directamente a tu Google Drive.</p><a href="/">Volver a generar</a></div>'
     else:
-        return f'<div style="font-family:sans-serif; text-align:center; margin-top:50px; color:red;"><h2>Error</h2><p>El PDF se creó pero no se pudo subir a Drive. Verifica los permisos del correo de servicio.</p><a href="/">Reintentar</a></div>'
+        return f'<div style="font-family:sans-serif; text-align:center; margin-top:50px; color:red;"><h2>Error</h2><p>El PDF se creó pero no se pudo subir a Drive. Verifica los permisos de la credencial.</p><a href="/">Reintentar</a></div>'
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
