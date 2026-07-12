@@ -2,3 +2,5 @@ flask
 reportlab
 pillow
 gunicorn
+google-auth
+google-api-python-client
