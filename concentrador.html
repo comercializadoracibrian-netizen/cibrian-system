@@ -5,20 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Captura y Concentrado de Lotes - Edición Continua</title>
     <style>
+        :root {
+            --verde-petroleo: #006068;
+            --verde-oscuro: #004D54;
+            --bg-color: #f4f7f6;
+            --texto-color: #333;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+            background-color: var(--bg-color);
             margin: 0;
             padding: 20px;
-            color: #333;
+            color: var(--texto-color);
         }
         .container {
-            max-width: 1100px;
+            max-width: 1000px;
             margin: 0 auto;
             background: #fff;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-top: 6px solid var(--verde-petroleo);
         }
         h1, h2 {
             color: #2c3e50;
@@ -97,6 +105,12 @@
         }
         .btn-download:hover { background-color: #2980b9; }
 
+        .btn-pdf {
+            background-color: var(--verde-petroleo);
+            color: white;
+        }
+        .btn-pdf:hover { background-color: var(--verde-oscuro); }
+
         .btn-upload-label {
             padding: 11px 20px;
             background-color: #f39c12;
@@ -119,7 +133,7 @@
         
         .sections {
             display: grid;
-            grid-template-columns: 1fr 1.2fr;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-top: 20px;
         }
@@ -172,6 +186,110 @@
         .btn-tbl-edit:hover { background-color: #d35400; }
         .btn-tbl-del { background-color: #e74c3c; color: white; }
         .btn-tbl-del:hover { background-color: #c0392b; }
+
+        /* --- ARQUITECTURA DE IMPRESIÓN PARA EL REPORTE PDF --- */
+        #report-print-area {
+            display: none;
+        }
+
+        @page {
+            size: letter;
+            margin: 15mm;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #report-print-area, #report-print-area * {
+                visibility: visible;
+            }
+            #report-print-area {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: #000;
+                padding: 0;
+                margin: 0;
+                box-sizing: border-box;
+            }
+            .pdf-header {
+                border-bottom: 3px solid #006068;
+                padding-bottom: 8px;
+                margin-bottom: 20px;
+                width: 100%;
+            }
+            .pdf-logo {
+                color: #006068;
+                font-size: 24px;
+                font-weight: bold;
+                font-family: Arial, sans-serif;
+                letter-spacing: 0.5px;
+            }
+            .pdf-meta-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            .pdf-meta-table td {
+                padding: 0;
+                border: none;
+                font-size: 14px;
+                line-height: 1.6;
+                vertical-align: top;
+            }
+            .pdf-section-title {
+                color: #006068;
+                font-family: sans-serif;
+                margin-top: 25px;
+                margin-bottom: 8px;
+                font-size: 16px;
+                border-bottom: 1px solid #cbd5e1;
+                padding-bottom: 3px;
+            }
+            .pdf-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                table-layout: fixed;
+            }
+            .pdf-table th {
+                border-bottom: 2px solid #006068;
+                color: #006068;
+                padding: 8px 4px;
+                text-align: left;
+                font-size: 12px;
+                font-weight: bold;
+                background-color: transparent;
+            }
+            .pdf-table td {
+                padding: 8px 4px;
+                border-bottom: 1px solid #eee;
+                font-size: 12px;
+            }
+            
+            /* Anchos para historial */
+            .w-idx { width: 12%; }
+            .w-lote { width: 28%; }
+            .w-mat { width: 25%; }
+            .w-cant { width: 15%; }
+            .w-lbs { width: 20%; }
+
+            .text-right {
+                text-align: right;
+            }
+            .pdf-total-row {
+                font-weight: bold;
+                color: #006068;
+            }
+            .pdf-total-row td {
+                border-top: 2px solid #006068;
+                border-bottom: double #006068;
+            }
+        }
     </style>
 </head>
 <body>
@@ -204,7 +322,7 @@
         </div>
         <div class="form-group">
             <label for="lbs">Libras (Lbs)</label>
-            <input type="number" id="lbs" placeholder="Ej. 50.5" step="0.01" min="0">
+            <input type="number" id="lbs" placeholder="Ej. 50.512" step="0.001" min="0">
         </div>
         <div class="form-group">
             <label for="lote">Número de Lote</label>
@@ -215,6 +333,7 @@
 
     <div class="actions-bar">
         <button class="btn-download" onclick="generarYDescargarTXT()">Descargar Reporte (TXT)</button>
+        <button class="btn-pdf" onclick="generarPDFCliente()">Generar Reporte (PDF)</button>
         <label for="fileImport" class="btn-upload-label">Abrir / Cargar TXT</label>
         <input type="file" id="fileImport" class="hidden" accept=".txt" onchange="cargarArchivoTXT(event)">
         <button class="btn-clear" onclick="limpiarTodo()">Limpiar Todo</button>
@@ -234,9 +353,8 @@
                         <tr>
                             <th>Lote</th>
                             <th>Material</th>
-                            <th>Cant.</th>
+                            <th>Total Cantidad</th>
                             <th>Total Lbs</th>
-                            <th>Total Kilos</th>
                             <th style="width: 110px;">Acciones</th>
                         </tr>
                     </thead>
@@ -248,10 +366,11 @@
     </div>
 </div>
 
+<div id="report-print-area"></div>
+
 <script>
     let historialRegistros = [];
     let indiceEdicion = -1; 
-    const FACTOR_KG = 0.4536; // Factor aduanal solicitado
 
     function registrarDato() {
         const inputMaterial = document.getElementById('material');
@@ -265,7 +384,7 @@
         const lbs = parseFloat(inputLbs.value);
         const lote = inputLote.value.trim().toUpperCase();
 
-        if (!cantidad || !lbs || lote === "") {
+        if (isNaN(cantidad) || isNaN(lbs) || lote === "") {
             alert("Por favor, llena todos los campos correctamente.");
             return;
         }
@@ -283,7 +402,6 @@
         actualizarTextoReg();
         actualizarConcentrado();
 
-        // Dejar el material como estaba, limpiar el resto
         inputCantidad.value = '';
         inputLbs.value = '';
         inputLote.value = '';
@@ -292,10 +410,9 @@
 
     function actualizarTextoReg() {
         const txtArea = document.getElementById('txtRegistro');
-        txtArea.value = historialRegistros.map((r, i) => {
-            const kg = r.lbs * FACTOR_KG;
-            return `[Reg ${i + 1}] Lote: ${r.lote} | Mat: ${r.material} | Cantidad: ${r.cantidad} | Lbs: ${r.lbs.toFixed(2)} | Kg: ${kg.toFixed(3)}`;
-        }).join('\n');
+        txtArea.value = historialRegistros.map((r, i) => 
+            `[Reg ${i + 1}] Lote: ${r.lote} | Mat: ${r.material} | Cantidad: ${r.cantidad} | Lbs: ${r.lbs.toFixed(3)}`
+        ).join('\n');
         
         txtArea.scrollTop = txtArea.scrollHeight;
     }
@@ -307,7 +424,6 @@
         let concentrado = {};
         let granTotalCantidad = 0;
         let granTotalLbs = 0;
-        let granTotalKilos = 0;
 
         historialRegistros.forEach((r, index) => {
             if (!concentrado[r.lote]) {
@@ -324,15 +440,12 @@
         for (let lote in concentrado) {
             const fila = document.createElement('tr');
             let idx = concentrado[lote].indicesOriginales[0];
-            const totalKgLote = concentrado[lote].lbs * FACTOR_KG;
-            granTotalKilos += totalKgLote;
 
             fila.innerHTML = `
                 <td><strong>${lote}</strong></td>
                 <td><small>${concentrado[lote].material}</small></td>
                 <td>${concentrado[lote].cantidad}</td>
-                <td>${concentrado[lote].lbs.toFixed(2)} Lbs</td>
-                <td><strong>${totalKgLote.toFixed(3)} Kg</strong></td>
+                <td>${concentrado[lote].lbs.toFixed(3)} Lbs</td>
                 <td>
                     <button class="btn-tbl btn-tbl-edit" onclick="prepararEdicion(${idx})" title="Editar lote">✏️</button>
                     <button class="btn-tbl btn-tbl-del" onclick="eliminarRegistro(${idx})" title="Eliminar lote">🗑️</button>
@@ -348,8 +461,7 @@
                 <td>TOTAL GENERAL</td>
                 <td></td>
                 <td>${granTotalCantidad}</td>
-                <td>${granTotalLbs.toFixed(2)} Lbs</td>
-                <td>${granTotalKilos.toFixed(3)} Kg</td>
+                <td>${granTotalLbs.toFixed(3)} Lbs</td>
                 <td></td>
             `;
             tbody.appendChild(filaTotal);
@@ -409,8 +521,6 @@
         let concentrado = {};
         let granTotalCantidad = 0;
         let granTotalLbs = 0;
-        let granTotalKilos = 0;
-
         historialRegistros.forEach(r => {
             if (!concentrado[r.lote]) concentrado[r.lote] = { material: r.material, cantidad: 0, lbs: 0 };
             concentrado[r.lote].cantidad += r.cantidad;
@@ -419,29 +529,26 @@
             granTotalLbs += r.lbs;
         });
 
-        let contenido = `==================================================================\n`;
-        contenido += `                  REPORTE DE CAPTURA DE LOTES                     \n`;
-        contenido += `==================================================================\n`;
+        let contenido = `=========================================\n`;
+        contenido += `       REPORTE DE CAPTURA DE LOTES       \n`;
+        contenido += `=========================================\n`;
         contenido += `Num de Reg: ${numReg}\n`;
         contenido += `Bultos: ${bultos}\n`;
         contenido += `Fecha de Exportación: ${new Date().toLocaleString()}\n`;
-        contenido += `==================================================================\n\n`;
+        contenido += `=========================================\n\n`;
         
         contenido += `--- HISTORIAL DE REGISTROS (DETALLE) ---\n`;
         historialRegistros.forEach((r, i) => {
-            const rKg = r.lbs * FACTOR_KG;
-            contenido += `[Reg ${i + 1}] Lote: ${r.lote.padEnd(10)} | Mat: ${r.material.padEnd(9)} | Cantidad: ${r.cantidad.toString().padEnd(5)} | Lbs: ${r.lbs.toFixed(2).padEnd(8)} | Kg: ${rKg.toFixed(3)}\n`;
+            contenido += `[Reg ${i + 1}] Lote: ${r.lote.padEnd(10)} | Mat: ${r.material.padEnd(9)} | Cantidad: ${r.cantidad.toString().padEnd(5)} | Lbs: ${r.lbs.toFixed(3)}\n`;
         });
         
         contenido += `\n--- CONCENTRADO POR LOTE ---\n`;
         for (let lote in concentrado) {
-            const cKg = concentrado[lote].lbs * FACTOR_KG;
-            granTotalKilos += cKg;
-            contenido += `Lote: ${lote.padEnd(12)} | Mat: ${concentrado[lote].material.padEnd(9)} | Cantidad: ${concentrado[lote].cantidad.toString().padEnd(6)} | Lbs: ${concentrado[lote].lbs.toFixed(2).padEnd(8)} Lbs | Kg: ${cKg.toFixed(3)} Kg\n`;
+            contenido += `Lote: ${lote.padEnd(12)} | Mat: ${concentrado[lote].material.padEnd(9)} | Cantidad: ${concentrado[lote].cantidad.toString().padEnd(6)} | Lbs: ${concentrado[lote].lbs.toFixed(3)} Lbs\n`;
         }
-        contenido += `------------------------------------------------------------------\n`;
-        contenido += `TOTAL GENERAL     | Mat: --------- | Cantidad: ${granTotalCantidad.toString().padEnd(6)} | Lbs: ${granTotalLbs.toFixed(2).padEnd(8)} Lbs | Kg: ${granTotalKilos.toFixed(3)} Kg\n`;
-        contenido += `==================================================================\n`;
+        contenido += `-----------------------------------------\n`;
+        contenido += `TOTAL GENERAL     | Mat: --------- | Cantidad: ${granTotalCantidad.toString().padEnd(6)} | Lbs: ${granTotalLbs.toFixed(3)} Lbs\n`;
+        contenido += `=========================================\n`;
         
         contenido += `\nDATA_JSON_BACKUP:${JSON.stringify({ numReg, bultos, registros: historialRegistros })}\n`;
 
@@ -453,6 +560,124 @@
         enlace.download = `Reporte_${numReg}_Actualizado_${marcaTiempo}.txt`;
         enlace.click();
         URL.revokeObjectURL(enlace.href);
+    }
+
+    function generarPDFCliente() {
+        const numReg = document.getElementById('numReg').value.trim().toUpperCase();
+        const bultos = document.getElementById('bultos').value.trim();
+        const fechaHoy = new Date().toLocaleString('es-MX');
+
+        if (numReg === "" || bultos === "") {
+            alert("Por favor, ingresa el 'Num de Reg' y los 'Bultos' antes de generar el PDF.");
+            return;
+        }
+
+        if (historialRegistros.length === 0) {
+            alert("No hay registros capturados para estructurar el reporte.");
+            return;
+        }
+
+        // 1. CONSTRUIR FILAS DEL HISTORIAL DE REGISTROS (DETALLE INDIVIDUAL)
+        let filasHistorialHTML = "";
+        historialRegistros.forEach((r, i) => {
+            filasHistorialHTML += `
+                <tr>
+                    <td>Reg ${i + 1}</td>
+                    <td><strong>${r.lote}</strong></td>
+                    <td>${r.material}</td>
+                    <td class="text-right">${r.cantidad}</td>
+                    <td class="text-right">${r.lbs.toFixed(3)} Lbs</td>
+                </tr>
+            `;
+        });
+
+        // 2. CONSTRUIR FILAS DEL CONCENTRADO ACUMULADO POR LOTE
+        let concentrado = {};
+        let granTotalCantidad = 0;
+        let granTotalLbs = 0;
+
+        historialRegistros.forEach(r => {
+            if (!concentrado[r.lote]) {
+                concentrado[r.lote] = { material: r.material, cantidad: 0, lbs: 0 };
+            }
+            concentrado[r.lote].cantidad += r.cantidad;
+            concentrado[r.lote].lbs += r.lbs;
+            granTotalCantidad += r.cantidad;
+            granTotalLbs += r.lbs;
+        });
+
+        let filasConcentradoHTML = "";
+        for (let lote in concentrado) {
+            filasConcentradoHTML += `
+                <tr>
+                    <td><strong>${lote}</strong></td>
+                    <td>${concentrado[lote].material}</td>
+                    <td class="text-right">${concentrado[lote].cantidad}</td>
+                    <td class="text-right">${concentrado[lote].lbs.toFixed(3)} Lbs</td>
+                </tr>
+            `;
+        }
+
+        // 3. ENSAMBLADO DEL MAQUETADO DE IMPRESIÓN (NUEVO ENCABEZADO)
+        let pdfHTML = `
+            <div class="pdf-header">
+                <div class="pdf-logo">SOPORTE DE REVISION NUM DE REG: ${numReg}</div>
+            </div>
+            
+            <table class="pdf-meta-table">
+                <tr>
+                    <td style="text-align: left; width: 50%;">
+                        <strong>NÚMERO DE REGISTRO:</strong> ${numReg}<br>
+                        <strong>BULTOS TOTALES:</strong> ${bultos}
+                    </td>
+                    <td style="text-align: right; width: 50%;">
+                        <strong>TIPO DE DOCUMENTO:</strong> Resumen e Historial de Captura<br>
+                        <strong>FECHA DE EMISIÓN:</strong> ${fechaHoy}
+                    </td>
+                </tr>
+            </table>
+
+            <div class="pdf-section-title">HISTORIAL DE REGISTROS (DETALLE)</div>
+            <table class="pdf-table">
+                <thead>
+                    <tr>
+                        <th class="w-idx">REG.</th>
+                        <th class="w-lote">NÚMERO DE LOTE</th>
+                        <th class="w-mat">MATERIAL</th>
+                        <th class="w-cant text-right">CANTIDAD</th>
+                        <th class="w-lbs text-right">LIBRAS (LBS)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filasHistorialHTML}
+                </tbody>
+            </table>
+
+            <div class="pdf-section-title">CONCENTRADO TOTALIZADO POR LOTE</div>
+            <table class="pdf-table">
+                <thead>
+                    <tr>
+                        <th>NÚMERO DE LOTE</th>
+                        <th>MATERIAL</th>
+                        <th class="text-right">TOTAL CANTIDAD</th>
+                        <th class="text-right">TOTAL LIBRAS (LBS)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filasConcentradoHTML}
+                    <tr class="pdf-total-row">
+                        <td>TOTAL GENERAL</td>
+                        <td>---------</td>
+                        <td class="text-right">${granTotalCantidad}</td>
+                        <td class="text-right">${granTotalLbs.toFixed(3)} Lbs</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        // Renderizado en capa limpia y ejecución de la ventana de guardado
+        document.getElementById('report-print-area').innerHTML = pdfHTML;
+        window.print();
     }
 
     function cargarArchivoTXT(evento) {
@@ -487,7 +712,7 @@
                 actualizarTextoReg();
                 actualizarConcentrado();
                 
-                alert("¡Reporte cargado correctamente! Los lotes viejos se restauraron y se recalcularon usando el factor aduanal 0.4536.");
+                alert("¡Reporte cargado correctamente! Los lotes viejos se restauraron. Ya puedes agregar lo faltante o modificarlos.");
             } catch (error) {
                 alert("Ocurrió un error al intentar procesar el archivo.");
                 console.error(error);
@@ -519,4 +744,3 @@
 
 </body>
 </html>
-
