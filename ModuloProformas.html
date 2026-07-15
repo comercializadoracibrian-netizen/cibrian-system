@@ -60,18 +60,12 @@
             margin-bottom: 12px;
         }
 
-        .form-group.triple {
-            grid-template-columns: 1.2fr 1.5fr 1.3fr;
-        }
-
-        /* Estructura alineada para Selección + Remoción de clientes */
         .selector-cliente-container {
             display: flex;
             align-items: center;
             width: 100%;
         }
 
-        /* Estructura alineada para Agregar clientes rápido */
         .add-cliente-container {
             display: flex;
             align-items: center;
@@ -146,28 +140,36 @@
             background-color: var(--verde-oscuro);
         }
 
-        /* --- ESTILOS DE IMPRESIÓN (EL REPORTE PROFORMA) --- */
+        /* --- ESTILOS DE IMPRESIÓN CORREGIDOS (Evita hoja en blanco) --- */
         #area-reporte {
             display: none;
         }
 
         @media print {
-            body * {
-                visibility: hidden;
+            /* 1. Definimos los márgenes de la página para evitar desbordes */
+            @page {
+                margin: 1.5cm;
             }
-            #area-reporte, #area-reporte * {
-                visibility: visible;
-            }
-            #area-reporte {
-                display: block;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white;
-                color: #000;
+
+            /* 2. Limpiamos cualquier margen en el body al imprimir */
+            body {
+                margin: 0;
                 padding: 0;
+                background: white;
             }
+
+            /* 3. ¡LA CLAVE! Ocultamos el contenedor principal por completo (no deja espacio fantasma) */
+            .container {
+                display: none !important;
+            }
+
+            /* 4. Mostramos el área de reporte de forma nativa */
+            #area-reporte {
+                display: block !important;
+                width: 100%;
+                color: #000;
+            }
+
             .header-print {
                 border-bottom: 3px solid #006068;
                 padding-bottom: 10px;
@@ -187,14 +189,19 @@
                 padding: 5px 0;
                 font-size: 14px;
             }
+            
+            .col-cant { width: 12%; text-align: left; }
+            .col-concepto { width: 58%; text-align: left; }
+            .col-importe { width: 30%; text-align: right; }
+
             .data-table th {
                 background-color: #006068 !important;
                 color: white !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                padding: 8px;
-                text-align: left;
+                padding: 10px 8px;
                 font-size: 13px;
+                text-transform: uppercase;
             }
             .data-table td {
                 padding: 8px;
@@ -211,6 +218,11 @@
                 print-color-adjust: exact;
                 font-size: 15px;
             }
+            .total-row td {
+                border-top: 2px solid #006068;
+                border-bottom: 2px solid #006068;
+                padding: 10px 8px;
+            }
         }
     </style>
 </head>
@@ -222,7 +234,6 @@
         <fieldset>
             <legend> Datos del Pedimento / Operación </legend>
             
-            <!-- SELECCIONAR CLIENTE -->
             <div class="form-group">
                 <label for="combo-cliente">Seleccionar Cliente:</label>
                 <div class="selector-cliente-container">
@@ -231,7 +242,6 @@
                 </div>
             </div>
 
-            <!-- AGREGAR CLIENTE NUEVO (SIMPLE) -->
             <div class="form-group" style="background: #eef5f6; padding: 10px; border-radius: 4px;">
                 <label for="entry-nuevo-cliente" style="font-weight: bold; color: var(--verde-oscuro);">➕ Registrar Cliente:</label>
                 <div class="add-cliente-container">
@@ -279,7 +289,6 @@
     <div id="area-reporte"></div>
 
     <script>
-        // Inicializar base de datos compartida o por defecto
         let clientes = JSON.parse(localStorage.getItem('clientes_db')) || ["CLIENTE GENERAL"];
         
         window.onload = function() {
@@ -311,12 +320,12 @@
             }
 
             clientes.push(nuevoC);
-            clientes.sort(); // Ordenamiento alfabético automático
+            clientes.sort();
             localStorage.setItem('clientes_db', JSON.stringify(clientes));
             
             actualizarCombo();
-            document.getElementById('combo-cliente').value = nuevoC; // Auto-selecciona el recién creado
-            input.value = ''; // Limpiar campo de texto
+            document.getElementById('combo-cliente').value = nuevoC;
+            input.value = '';
         }
 
         function eliminarClienteActual() {
@@ -358,7 +367,6 @@
             let tcOficial = getFloat('entry-tc');
             let tcOperativo = tcOficial + 1.0000;
 
-            // Lógica matemática exacta original
             let servMn = Math.ceil(getFloat('f_moreno_usd') * tcOficial);
             let expressMn = Math.ceil(getFloat('express_usd') * tcOperativo);
             let transporteMn = Math.ceil(getFloat('transporte_usd') * tcOperativo);
@@ -377,7 +385,6 @@
             let totalHonorarios = subtotalServ + iva8;
             let totalADepositar = totalHonorarios + comercializadoraMn + expressMn + transporteMn + gastoAmeMn + otrosMn + prevalMn + impuestosAduanales;
 
-            // Construir el cuerpo de la Proforma Dinámica
             let reportHTML = `
                 <div class="header-print">
                     <div class="title-print">COMERCIALIZADORA CIBRIÁN</div>
@@ -393,27 +400,49 @@
                     </tr>
                 </table>
                 <table class="data-table">
-                    <tr>
-                        <th>CANT</th>
-                        <th>CONCEPTO</th>
-                        <th class="text-right">IMPORTE (MN)</th>
-                    </tr>
+                    <thead>
+                        <tr>
+                            <th class="col-cant">CANT</th>
+                            <th class="col-concepto">CONCEPTO</th>
+                            <th class="col-importe">IMPORTE (MN)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
 
             function agregarFila(desc, m) {
                 if (m > 0) {
-                    reportHTML += `<tr><td>1.0</td><td>${desc}</td><td class="text-right">$${formatoMoneda(m)}</td></tr>`;
+                    reportHTML += `
+                        <tr>
+                            <td class="col-cant">1.0</td>
+                            <td class="col-concepto">${desc}</td>
+                            <td class="col-importe">$${formatoMoneda(m)}</td>
+                        </tr>`;
                 }
             }
 
-            function agregarFilaEspecial(label, v, bold = false) {
+            function agregarFilaEspecialObligatoria(label, v, bold = false) {
+                let estilo = bold ? "style='font-weight:bold; color: var(--verde-oscuro);'" : "";
+                reportHTML += `
+                    <tr ${estilo}>
+                        <td class="col-cant"></td>
+                        <td class="col-concepto" style="text-align: right; font-weight: bold;">${label}</td>
+                        <td class="col-importe" style="font-weight: bold;">$${formatoMoneda(v)}</td>
+                    </tr>`;
+            }
+
+            function agregarFilaEspecialOpcional(label, v, bold = false) {
                 if (v > 0) {
                     let estilo = bold ? "style='font-weight:bold;'" : "";
-                    reportHTML += `<tr ${estilo}><td colspan="2" class="text-right">${label}</td><td class="text-right">$${formatoMoneda(v)}</td></tr>`;
+                    reportHTML += `
+                        <tr ${estilo}>
+                            <td class="col-cant"></td>
+                            <td class="col-concepto" style="text-align: right; font-weight: bold;">${label}</td>
+                            <td class="col-importe">$${formatoMoneda(v)}</td>
+                        </tr>`;
                 }
             }
 
-            // Inyección de filas válidas
             agregarFila("Servicios Aduanales", servMn);
             agregarFila("Enlace de sistema", 200);
             agregarFila("Equipo papel y fotocopias", 100);
@@ -421,27 +450,28 @@
             agregarFila("Candado Fiscal", candado);
             agregarFila("Contraprestación", contra);
 
-            agregarFilaEspecial("SUBTOTAL SERVICIOS:", subtotalServ);
-            agregarFilaEspecial("IVA (8%):", iva8);
-            agregarFilaEspecial("TOTAL HONORARIOS:", totalHonorarios, true);
+            agregarFilaEspecialObligatoria("SUBTOTAL SERVICIOS:", subtotalServ);
+            agregarFilaEspecialObligatoria("IVA (8%):", iva8);
+            agregarFilaEspecialObligatoria("TOTAL HONORARIOS:", totalHonorarios, true);
 
-            agregarFilaEspecial("Comercializadora (MN):", comercializadoraMn);
-            agregarFilaEspecial("Prevalidador e IVA:", prevalMn);
-            agregarFilaEspecial("Impuestos y Derechos Aduanales:", impuestosAduanales);
-            agregarFilaEspecial("Express:", expressMn);
-            agregarFilaEspecial("Transporte Alfonso:", transporteMn);
-            agregarFilaEspecial("Gasto Americano:", gastoAmeMn);
-            agregarFilaEspecial("Otros Gastos:", otrosMn);
+            agregarFilaEspecialOpcional("Comercializadora (MN):", comercializadoraMn);
+            agregarFilaEspecialOpcional("Prevalidador e IVA:", prevalMn);
+            agregarFilaEspecialOpcional("Impuestos y Derechos Aduanales:", impuestosAduanales);
+            agregarFilaEspecialOpcional("Express:", expressMn);
+            agregarFilaEspecialOpcional("Transporte Alfonso:", transporteMn);
+            agregarFilaEspecialOpcional("Gasto Americano:", gastoAmeMn);
+            agregarFilaEspecialOpcional("Otros Gastos:", otrosMn);
 
             reportHTML += `
-                <tr class="total-row">
-                    <td colspan="2" class="text-right">TOTAL A DEPOSITAR:</td>
-                    <td class="text-right">$${formatoMoneda(totalADepositar)} MN</td>
-                </tr>
+                    <tr class="total-row">
+                        <td class="col-cant"></td>
+                        <td class="col-concepto" style="text-align: right;">TOTAL A DEPOSITAR:</td>
+                        <td class="col-importe">$${formatoMoneda(totalADepositar)} MN</td>
+                    </tr>
+                </tbody>
                 </table>
             `;
 
-            // Insertar reporte en el área oculta y mandar a imprimir de forma nativa
             document.getElementById('area-reporte').innerHTML = reportHTML;
             window.print();
         }
