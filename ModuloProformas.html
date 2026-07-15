@@ -158,12 +158,12 @@
                 background: white;
             }
 
-            /* 3. ¡LA CLAVE! Ocultamos el contenedor principal por completo (no deja espacio fantasma) */
+            /* 3. Ocultamos el contenedor principal por completo */
             .container {
                 display: none !important;
             }
 
-            /* 4. Mostramos el área de reporte de forma nativa */
+            /* 4. Mostramos el área de reporte */
             #area-reporte {
                 display: block !important;
                 width: 100%;
@@ -421,8 +421,9 @@
                 }
             }
 
+            // CORRECCIÓN DE COLOR: Reemplazado "var(--verde-oscuro)" por el color Hexadecimal explícito "#006068" para impresión sin fallos
             function agregarFilaEspecialObligatoria(label, v, bold = false) {
-                let estilo = bold ? "style='font-weight:bold; color: var(--verde-oscuro);'" : "";
+                let estilo = bold ? "style='font-weight:bold; color: #006068;'" : "style='color: #006068;'";
                 reportHTML += `
                     <tr ${estilo}>
                         <td class="col-cant"></td>
