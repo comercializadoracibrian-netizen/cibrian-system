@@ -322,7 +322,7 @@
         </div>
         <div class="form-group">
             <label for="lbs">Libras (Lbs)</label>
-            <input type="number" id="lbs" placeholder="Ej. 50.512" step="0.001" min="0">
+            <input type="number" id="lbs" placeholder="Ej. 165.124" step="0.001" min="0">
         </div>
         <div class="form-group">
             <label for="lote">Número de Lote</label>
@@ -384,7 +384,7 @@
         const lbs = parseFloat(inputLbs.value);
         const lote = inputLote.value.trim().toUpperCase();
 
-        if (isNaN(cantidad) || isNaN(lbs) || lote === "") {
+        if (!cantidad || !lbs || lote === "") {
             alert("Por favor, llena todos los campos correctamente.");
             return;
         }
@@ -410,6 +410,7 @@
 
     function actualizarTextoReg() {
         const txtArea = document.getElementById('txtRegistro');
+        // SE ACTUALIZÓ A toFixed(3)
         txtArea.value = historialRegistros.map((r, i) => 
             `[Reg ${i + 1}] Lote: ${r.lote} | Mat: ${r.material} | Cantidad: ${r.cantidad} | Lbs: ${r.lbs.toFixed(3)}`
         ).join('\n');
@@ -441,6 +442,7 @@
             const fila = document.createElement('tr');
             let idx = concentrado[lote].indicesOriginales[0];
 
+            // SE ACTUALIZÓ A toFixed(3)
             fila.innerHTML = `
                 <td><strong>${lote}</strong></td>
                 <td><small>${concentrado[lote].material}</small></td>
@@ -457,6 +459,7 @@
         if (historialRegistros.length > 0) {
             const filaTotal = document.createElement('tr');
             filaTotal.classList.add('total-row');
+            // SE ACTUALIZÓ A toFixed(3)
             filaTotal.innerHTML = `
                 <td>TOTAL GENERAL</td>
                 <td></td>
@@ -539,14 +542,17 @@
         
         contenido += `--- HISTORIAL DE REGISTROS (DETALLE) ---\n`;
         historialRegistros.forEach((r, i) => {
+            // SE ACTUALIZÓ A toFixed(3)
             contenido += `[Reg ${i + 1}] Lote: ${r.lote.padEnd(10)} | Mat: ${r.material.padEnd(9)} | Cantidad: ${r.cantidad.toString().padEnd(5)} | Lbs: ${r.lbs.toFixed(3)}\n`;
         });
         
         contenido += `\n--- CONCENTRADO POR LOTE ---\n`;
         for (let lote in concentrado) {
+            // SE ACTUALIZÓ A toFixed(3)
             contenido += `Lote: ${lote.padEnd(12)} | Mat: ${concentrado[lote].material.padEnd(9)} | Cantidad: ${concentrado[lote].cantidad.toString().padEnd(6)} | Lbs: ${concentrado[lote].lbs.toFixed(3)} Lbs\n`;
         }
         contenido += `-----------------------------------------\n`;
+        // SE ACTUALIZÓ A toFixed(3)
         contenido += `TOTAL GENERAL     | Mat: --------- | Cantidad: ${granTotalCantidad.toString().padEnd(6)} | Lbs: ${granTotalLbs.toFixed(3)} Lbs\n`;
         contenido += `=========================================\n`;
         
@@ -562,6 +568,7 @@
         URL.revokeObjectURL(enlace.href);
     }
 
+    // --- FUNCIÓN DE IMPRESIÓN MODIFICADA CON HISTORIAL Y NUEVO TÍTULO ---
     function generarPDFCliente() {
         const numReg = document.getElementById('numReg').value.trim().toUpperCase();
         const bultos = document.getElementById('bultos').value.trim();
@@ -580,6 +587,7 @@
         // 1. CONSTRUIR FILAS DEL HISTORIAL DE REGISTROS (DETALLE INDIVIDUAL)
         let filasHistorialHTML = "";
         historialRegistros.forEach((r, i) => {
+            // SE ACTUALIZÓ A toFixed(3)
             filasHistorialHTML += `
                 <tr>
                     <td>Reg ${i + 1}</td>
@@ -608,6 +616,7 @@
 
         let filasConcentradoHTML = "";
         for (let lote in concentrado) {
+            // SE ACTUALIZÓ A toFixed(3)
             filasConcentradoHTML += `
                 <tr>
                     <td><strong>${lote}</strong></td>
@@ -619,6 +628,7 @@
         }
 
         // 3. ENSAMBLADO DEL MAQUETADO DE IMPRESIÓN (NUEVO ENCABEZADO)
+        // SE ACTUALIZÓ CON toFixed(3) EN LOS TOTALES GENERALES DEL PDF
         let pdfHTML = `
             <div class="pdf-header">
                 <div class="pdf-logo">SOPORTE DE REVISION NUM DE REG: ${numReg}</div>
